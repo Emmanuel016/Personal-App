@@ -1,0 +1,238 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+
+<style>
+/* Centering the Login Terminal */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+/* High-Tech Terminal Card */
+.terminal-card {
+    background: rgba(10, 25, 47, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 242, 254, 0.1);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    animation: terminalEntrance 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes terminalEntrance {
+    from { opacity: 0; transform: scale(0.8) translateY(40px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Scanning Line Animation */
+.terminal-card::after {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(0, 242, 254, 0.1), transparent);
+    animation: scanLine 4s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanLine {
+    0% { top: -100%; }
+    100% { top: 100%; }
+}
+
+/* Header Text */
+.terminal-card h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 32px;
+    color: #fff;
+    text-shadow: 0 0 15px #00f2fe;
+    margin-bottom: 5px;
+}
+
+.auth-status {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    color: #4facfe;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+}
+
+/* Input Styling */
+.field-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.field-container i {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    color: #00f2fe;
+}
+
+input {
+    width: 100%;
+    padding: 14px 15px 14px 45px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 12px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    transition: 0.3s;
+    box-sizing: border-box;
+}
+
+input:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+    background: rgba(0, 0, 0, 0.6);
+    outline: none;
+}
+
+/* Primary Button */
+.btn-auth {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    border: none;
+    border-radius: 12px;
+    color: #0a192f;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.btn-auth:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+}
+
+/* Footer Links */
+.auth-footer {
+    margin-top: 25px;
+    font-size: 14px;
+    color: #8892b0;
+}
+
+.auth-footer a {
+    color: #00f2fe;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-footer a:hover {
+    text-shadow: 0 0 10px cyan;
+}
+
+/* AI Quote */
+.quote-box {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Rajdhani', sans-serif;
+    font-style: italic;
+    color: #4facfe;
+    min-height: 40px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.error-msg {
+    color: #ff007f;
+    background: rgba(255, 0, 127, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 0, 127, 0.2);
+}
+</style>
+
+<div class="login-wrapper">
+    <div class="terminal-card">
+        <div class="auth-status">
+            System Authentication Required
+        </div>
+        
+        <h2>{{ 'Register' if register else 'Access Core' }}</h2>
+
+        <form method="POST">
+            <div class="field-container">
+                <i class="fa-solid fa-user-secret"></i>
+                <input name="username" placeholder="Credential ID" required autocomplete="username">
+            </div>
+            
+            <div class="field-container">
+                <i class="fa-solid fa-key"></i>
+                <input name="password" type="password" placeholder="Passcode" required autocomplete="current-password">
+            </div>
+
+            {% if error %}
+                <div class="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+            {% endif %}
+
+            <button type="submit" class="btn-auth">
+                {{ 'Sign-in/Launch' if register else 'Login' }}
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            {% if not register %}
+                New Operative? <a href="/register">Create Identity/Signup</a>
+            {% else %}
+                Identity Verified? <a href="/login">Login into your account</a>
+            {% endif %}
+        </div>
+
+        <div class="quote-box" id="quote"></div>
+    </div>
+</div>
+
+<script>
+const quotes = [
+    "NEURAL LINK: ESTABLISHED",
+    "THE FUTURE BELONGS TO THOSE WHO CODE IT.",
+    "SECURITY IS NOT A FEATURE, IT'S A MINDSET.",
+    "Beyond the code, lies the future.",
+    "THE FUTURE IS NOW.",
+    "Believe in the code, and the code will believe in you.",
+    "HACK THE PLANET, ONE LINE AT A TIME.",
+    "DREAM IN CODE. BUILD IN REALITY.",
+    "LOGIN GATEWAY: SECURED",
+    "DECRYPTING CORE ASSETS..."
+];
+
+let quoteIdx = 0;
+const quoteEl = document.getElementById("quote");
+
+function rotateQuote() {
+    quoteEl.style.transition = "opacity 0.5s ease";
+    quoteEl.style.opacity = 0;
+    setTimeout(() => {
+        quoteEl.textContent = quotes[quoteIdx];
+        quoteEl.style.opacity = 0.7;
+        quoteIdx = (quoteIdx + 1) % quotes.length;
+    }, 10);
+}
+
+rotateQuote();
+setInterval(rotateQuote, 4000);
+</script>
+
+{% endblock %}

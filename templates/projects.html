@@ -1,0 +1,1286 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Success Notification System -->
+<div id="successNotification" class="notification success-notification">
+    <div class="notification-content">
+        <div class="notification-icon success">
+            <i class="fa-solid fa-check-circle"></i>
+        </div>
+        <div class="notification-text">
+            <h4 id="successTitle">Success</h4>
+            <p id="successMessage">Operation completed successfully.</p>
+        </div>
+        <button class="notification-close" onclick="closeNotification('success')">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Error Notification System -->
+<div id="errorNotification" class="notification error-notification">
+    <div class="notification-content">
+        <div class="notification-icon error">
+            <i class="fa-solid fa-exclamation-circle"></i>
+        </div>
+        <div class="notification-text">
+            <h4 id="errorTitle">Error</h4>
+            <p id="errorMessage">Something went wrong.</p>
+        </div>
+        <button class="notification-close" onclick="closeNotification('error')">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Info Notification System -->
+<div id="infoNotification" class="notification info-notification">
+    <div class="notification-content">
+        <div class="notification-icon info">
+            <i class="fa-solid fa-info-circle"></i>
+        </div>
+        <div class="notification-text">
+            <h4 id="infoTitle">Information</h4>
+            <p id="infoMessage">Here's some information for you.</p>
+        </div>
+        <button class="notification-close" onclick="closeNotification('info')">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+</div>
+
+<style>
+/* Modern Design System */
+:root {
+    --primary-cyan: #00f2fe;
+    --secondary-cyan: #4facfe;
+    --danger-red: #ff003c;
+    --warning-amber: #ff9100;
+    --success-green: #00e676;
+    --bg-dark: #0a192f;
+    --bg-card: rgba(10, 25, 47, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: #8892b0;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Base Layout */
+.projects-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.projects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.projects-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary-cyan);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.projects-title i {
+    font-size: 2rem;
+}
+
+.projects-stats {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.stat-badge {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    backdrop-filter: blur(10px);
+}
+
+/* Dashboard Grid */
+.projects-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Card Components */
+.dashboard-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(16px);
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    border-color: var(--primary-cyan);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card-header i {
+    color: var(--primary-cyan);
+    font-size: 1.25rem;
+}
+
+/* Form Elements */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-input, .form-select, .form-textarea {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-cyan);
+    box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.1);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+}
+
+/* Buttons */
+.btn {
+    background: linear-gradient(135deg, var(--primary-cyan), var(--secondary-cyan));
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--bg-dark);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary-cyan);
+    color: var(--primary-cyan);
+}
+
+/* Scrollbar tweaks for chat */
+.chat-container::-webkit-scrollbar { width: 4px; }
+.chat-container::-webkit-scrollbar-track { background: transparent; }
+.chat-container::-webkit-scrollbar-thumb { background: #233554; border-radius: 10px; }
+.chat-container::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+
+/* Notification System */
+.notification {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    min-width: 320px;
+    max-width: 400px;
+    z-index: 10000;
+    display: none;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    display: block;
+    transform: translateX(0);
+    animation: slideInNotification 0.4s ease-out;
+}
+
+.notification.hide {
+    animation: slideOutNotification 0.3s ease-in forwards;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.notification-icon.success {
+    background: rgba(0, 230, 118, 0.2);
+    color: #00e676;
+}
+
+.notification-icon.error {
+    background: rgba(255, 0, 60, 0.2);
+    color: #ff003c;
+}
+
+.notification-icon.info {
+    background: rgba(0, 242, 254, 0.2);
+    color: #00f2fe;
+}
+
+.notification-text {
+    flex: 1;
+}
+
+.notification-text h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.notification-text p {
+    margin: 0;
+    font-size: 13px;
+    color: #8892b0;
+    line-height: 1.4;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: #8892b0;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.success-notification .notification-content {
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.1), rgba(10, 25, 47, 0.8));
+    border-color: rgba(0, 230, 118, 0.3);
+}
+
+.error-notification .notification-content {
+    background: linear-gradient(135deg, rgba(255, 0, 60, 0.1), rgba(10, 25, 47, 0.8));
+    border-color: rgba(255, 0, 60, 0.3);
+}
+
+.info-notification .notification-content {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.1), rgba(10, 25, 47, 0.8));
+    border-color: rgba(0, 242, 254, 0.3);
+}
+
+@keyframes slideInNotification {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutNotification {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Mobile responsive notifications */
+@media (max-width: 768px) {
+    .notification {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        min-width: auto;
+        max-width: none;
+    }
+}
+
+/* Chart Container */
+.chart-container {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    height: 300px;
+    position: relative;
+}
+
+/* Project List */
+.projects-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.project-card.client-project {
+    border-left: 4px solid var(--primary-cyan);
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.05), var(--bg-card));
+}
+
+.client-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(0, 242, 254, 0.1);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--primary-cyan);
+}
+
+.client-info i {
+    font-size: 14px;
+}
+
+.project-card:hover {
+    border-color: var(--primary-cyan);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.project-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.project-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-pending {
+    background: rgba(255, 145, 0, 0.2);
+    color: var(--warning-amber);
+    border: 1px solid rgba(255, 145, 0, 0.3);
+}
+
+.status-active {
+    background: rgba(0, 242, 254, 0.2);
+    color: var(--primary-cyan);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.status-completed {
+    background: rgba(0, 230, 118, 0.2);
+    color: var(--success-green);
+    border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.project-description {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.project-financials {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-dark);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.financial-item {
+    text-align: center;
+}
+
+.financial-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.financial-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.project-deadline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.project-deadline i {
+    color: var(--primary-cyan);
+}
+
+.project-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.action-btn:hover {
+    border-color: var(--primary-cyan);
+    color: var(--primary-cyan);
+}
+
+/* Warning and Success Messages */
+.message {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.message-success {
+    background: rgba(0, 230, 118, 0.2);
+    color: var(--success-green);
+    border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.message-error {
+    background: rgba(255, 0, 60, 0.2);
+    color: var(--danger-red);
+    border: 1px solid rgba(255, 0, 60, 0.3);
+}
+
+.message-info {
+    background: rgba(0, 242, 254, 0.2);
+    color: var(--primary-cyan);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.loading i {
+    font-size: 2rem;
+    margin-right: 1rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .projects-dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .projects-container {
+        padding: 1rem;
+    }
+    
+    .projects-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .projects-title {
+        font-size: 2rem;
+    }
+    
+    .projects-stats {
+        flex-wrap: wrap;
+    }
+    
+    .projects-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .project-financials {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .project-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .projects-container {
+        padding: 0.5rem;
+    }
+    
+    .projects-title {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-card {
+        padding: 1rem;
+    }
+    
+    .project-card {
+        padding: 1rem;
+    }
+}
+</style>
+
+<div class="projects-container">
+    <!-- Header -->
+    <div class="projects-header">
+        <h1 class="projects-title">
+            <i class="fa-solid fa-diagram-project"></i>
+            Project Command Center
+        </h1>
+        <div class="projects-stats">
+            <div class="stat-badge">
+                <i class="fa-solid fa-folder-open"></i>
+                <span id="projectCount">0</span> Projects
+            </div>
+            <div class="stat-badge">
+                <i class="fa-solid fa-clock"></i>
+                <span id="activeCount">0</span> Active
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="projects-dashboard">
+        <!-- Add New Project -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <i class="fa-solid fa-plus-circle"></i>
+                Initialize New Project
+            </div>
+            
+            <div id="projectMessage"></div>
+            
+            <form id="addProjectForm" onsubmit="return false;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Client ID</label>
+                        <input type="number" id="clientId" class="form-input" placeholder="Enter client ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Project Value (£)</label>
+                        <input type="number" id="projectPrice" class="form-input" placeholder="0.00" step="0.01" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Project Title</label>
+                    <input type="text" id="projectTitle" class="form-input" placeholder="Enter project name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="projectDescription" class="form-textarea" placeholder="Project scope and deliverables" required></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="projectStatus" class="form-select">
+                            <option value="Pending">Pending</option>
+                            <option value="Active" selected>Active</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Deadline</label>
+                        <input type="date" id="projectDeadline" class="form-input">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" onclick="addProject()">
+                    <i class="fa-solid fa-rocket"></i>
+                    Deploy Project
+                </button>
+            </form>
+        </div>
+
+        <!-- Analytics -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <i class="fa-solid fa-chart-line"></i>
+                Project Analytics
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="projectChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects List -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <i class="fa-solid fa-list-check"></i>
+            Active Projects Registry
+        </div>
+        
+        <div id="projectsList" class="projects-list">
+            <div class="loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Loading projects...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+let projects = [];
+let chart = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    loadChart();
+});
+
+// Load projects from API
+async function loadProjects() {
+    const container = document.getElementById('projectsList');
+    
+    try {
+        console.log('Loading projects...');
+        
+        // Set a timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+        
+        const response = await Promise.race([
+            fetch('/api/projects'),
+            timeoutPromise
+        ]);
+        
+        // Check response status
+        if (!response.ok) {
+            console.error('API returned error status:', response.status, response.statusText);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Error details:', errorData);
+            showMessage(`Error ${response.status}: ${errorData.error || 'Failed to load projects'}`, 'error');
+            showLoadingError(container);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('API Response:', data);
+        
+        if (Array.isArray(data)) {
+            projects = data;
+            console.log(`Loaded ${projects.length} projects:`, projects.map(p => ({
+                id: p.id,
+                title: p.title,
+                client_name: p.client_name,
+                client_user_id: p.client_user_id
+            })));
+            renderProjects();
+            updateStats();
+            updateChart();
+        } else if (data && data.error) {
+            console.error('API returned error:', data.error);
+            showMessage(`Error: ${data.error}`, 'error');
+            showLoadingError(container);
+        } else {
+            console.error('API returned non-array data:', data);
+            showMessage('Invalid data format received', 'error');
+            showLoadingError(container);
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+        showMessage('Failed to load projects - Network error', 'error');
+        showLoadingError(container);
+    }
+}
+
+// Show loading error in projects container
+function showLoadingError(container) {
+    if (container) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <h3>Loading Failed</h3>
+                <p>Unable to load projects. Please refresh the page or contact support.</p>
+                <button class="btn" onclick="loadProjects()" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-refresh"></i> Retry
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Render projects list
+function renderProjects() {
+    const container = document.getElementById('projectsList');
+    
+    if (projects.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-folder-open"></i>
+                <h3>No Projects Yet</h3>
+                <p>Start by creating your first project using the form above.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = projects.map(project => createProjectCard(project)).join('');
+}
+
+// Create project card HTML with enhanced data
+function createProjectCard(project) {
+    const statusClass = `status-${project.status.toLowerCase()}`;
+    
+    // Use enhanced deadline data if available, otherwise calculate
+    let daysLeft, deadlineColor, deadlineText;
+    if (project.days_until_deadline !== null && project.days_until_deadline !== undefined) {
+        daysLeft = project.days_until_deadline;
+        deadlineColor = daysLeft < 0 ? 'var(--danger-red)' : 
+                       daysLeft <= 3 ? 'var(--warning-amber)' : 'var(--primary-cyan)';
+        deadlineText = daysLeft < 0 ? `Overdue by ${Math.abs(daysLeft)} days` : `${daysLeft} days left`;
+    } else {
+        daysLeft = calculateDaysLeft(project.deadline);
+        deadlineColor = daysLeft <= 3 ? 'var(--danger-red)' : 
+                       daysLeft <= 7 ? 'var(--warning-amber)' : 'var(--primary-cyan)';
+        deadlineText = `${daysLeft} days left`;
+    }
+    
+    // Use enhanced client project detection
+    const isClientProject = project.is_client_project || (project.client_user_id && project.client_name);
+    
+    // Use enhanced financial data
+    const outstandingBalance = project.outstanding_balance !== undefined ? 
+        project.outstanding_balance : 
+        parseFloat(project.price || 0) - parseFloat(project.amount_paid || 0);
+    
+    return `
+        <div class="project-card ${isClientProject ? 'client-project' : ''}">
+            <div class="project-header">
+                <h3 class="project-title">${project.title}</h3>
+                <span class="project-status ${statusClass}">${project.status}</span>
+            </div>
+            
+            ${isClientProject ? `
+                <div class="client-info">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Client: ${project.client_name || 'Unknown'} (ID: ${project.client_user_id})</span>
+                </div>
+            ` : ''}
+            
+            <p class="project-description">${project.desc || 'No description provided'}</p>
+            
+            <div class="project-financials">
+                <div class="financial-item">
+                    <div class="financial-label">Value</div>
+                    <div class="financial-value">£${parseFloat(project.price || 0).toFixed(2)}</div>
+                </div>
+                <div class="financial-item">
+                    <div class="financial-label">Paid</div>
+                    <div class="financial-value">£${parseFloat(project.amount_paid || 0).toFixed(2)}</div>
+                </div>
+                <div class="financial-item">
+                    <div class="financial-label">Outstanding</div>
+                    <div class="financial-value" style="color: ${outstandingBalance > 0 ? 'var(--warning-amber)' : 'var(--success-green)'}">
+                        £${outstandingBalance.toFixed(2)}
+                    </div>
+                </div>
+            </div>
+            
+            ${project.deadline ? `
+                <div class="project-deadline" style="color: ${deadlineColor}">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Deadline: ${new Date(new Date(project.deadline).getTime() + 60 * 60 * 1000).toLocaleDateString()} (${deadlineText})</span>
+                </div>
+            ` : ''}
+            
+            <div class="project-actions">
+                <button class="action-btn" onclick="editProject(${project.id})">
+                    <i class="fa-solid fa-edit"></i> Edit
+                </button>
+                <button class="action-btn" onclick="addPayment(${project.id})">
+                    <i class="fa-solid fa-plus"></i> Payment
+                </button>
+                <button class="action-btn" onclick="deleteProject(${project.id})">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Calculate days left until deadline
+function calculateDaysLeft(deadline) {
+    if (!deadline) return null;
+    const today = new Date();
+    const due = new Date(deadline);
+    const diffTime = due - today;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// Update statistics
+function updateStats() {
+    const totalCount = document.getElementById('projectCount');
+    const activeCount = document.getElementById('activeCount');
+    
+    totalCount.textContent = projects.length;
+    activeCount.textContent = projects.filter(p => p.status === 'Active').length;
+}
+
+// Add new project
+async function addProject() {
+    const form = document.getElementById('addProjectForm');
+    
+    const projectData = {
+        client_user_id: document.getElementById('clientId').value,
+        title: document.getElementById('projectTitle').value,
+        desc: document.getElementById('projectDescription').value,
+        price: parseFloat(document.getElementById('projectPrice').value) || 0,
+        status: document.getElementById('projectStatus').value,
+        deadline: document.getElementById('projectDeadline').value,
+        amount_paid: 0
+    };
+    
+    // Validation
+    if (!projectData.client_user_id || !projectData.title || !projectData.desc) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(projectData)
+        });
+        
+        if (response.ok) {
+            const newProject = await response.json();
+            projects.unshift(newProject);
+            renderProjects();
+            updateStats();
+            updateChart();
+            
+            // Reset form
+            form.reset();
+            showMessage('Project created successfully!', 'success');
+        } else {
+            const error = await response.json();
+            showMessage(error.error || 'Failed to create project', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating project:', error);
+        showMessage('Failed to create project', 'error');
+    }
+}
+
+// Edit project
+function editProject(id) {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    
+    // Populate form with project data
+    document.getElementById('clientId').value = project.client_user_id;
+    document.getElementById('projectTitle').value = project.title;
+    document.getElementById('projectDescription').value = project.desc;
+    document.getElementById('projectPrice').value = project.price;
+    document.getElementById('projectStatus').value = project.status;
+    document.getElementById('projectDeadline').value = project.deadline;
+    
+    // Scroll to form
+    document.querySelector('.projects-dashboard').scrollIntoView({ behavior: 'smooth' });
+    showMessage('Edit project details and update', 'info');
+}
+
+// Add payment to project
+async function addPayment(id) {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    
+    const amount = prompt(`Add payment for "${project.title}":`, '0.00');
+    if (!amount || isNaN(parseFloat(amount))) return;
+    
+    try {
+        const response = await fetch(`/api/projects/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount_paid: project.amount_paid + parseFloat(amount)
+            })
+        });
+        
+        if (response.ok) {
+            project.amount_paid += parseFloat(amount);
+            renderProjects();
+            updateChart();
+            showMessage(`Payment of £${parseFloat(amount).toFixed(2)} added successfully!`, 'success');
+        } else {
+            showMessage('Failed to add payment', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding payment:', error);
+        showMessage('Failed to add payment', 'error');
+    }
+}
+
+// Delete project
+async function deleteProject(id) {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    
+    if (!confirm(`Are you sure you want to delete "${project.title}"?`)) return;
+    
+    try {
+        const response = await fetch(`/api/projects/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            projects = projects.filter(p => p.id !== id);
+            renderProjects();
+            updateStats();
+            updateChart();
+            showMessage('Project deleted successfully!', 'success');
+        } else {
+            showMessage('Failed to delete project', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting project:', error);
+        showMessage('Failed to delete project', 'error');
+    }
+}
+
+// Load and render chart
+async function loadChart() {
+    try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        
+        if (!Array.isArray(data)) return;
+        
+        const statusCounts = {
+            'Pending': 0,
+            'Active': 0,
+            'Completed': 0
+        };
+        
+        data.forEach(project => {
+            if (statusCounts.hasOwnProperty(project.status)) {
+                statusCounts[project.status]++;
+            }
+        });
+        
+        renderChart(statusCounts);
+    } catch (error) {
+        console.error('Error loading chart data:', error);
+    }
+}
+
+// Render chart
+function renderChart(statusCounts) {
+    const ctx = document.getElementById('projectChart').getContext('2d');
+    
+    if (chart) {
+        chart.destroy();
+    }
+    
+    // Get all unique statuses for dynamic labeling
+    const allStatuses = Object.keys(statusCounts).filter(status => statusCounts[status] > 0);
+    const statusColors = {
+        'Pending': '#ff9100',
+        'Active': '#00f2fe', 
+        'Completed': '#00e676',
+        'Pending Approval': '#ff9100',
+        'In Progress': '#00f2fe',
+        'On Hold': '#ff003c',
+        'Cancelled': '#ff003c'
+    };
+    
+    chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: allStatuses,
+            datasets: [{
+                data: allStatuses.map(status => statusCounts[status]),
+                backgroundColor: allStatuses.map(status => statusColors[status] || '#8892b0'),
+                borderWidth: 2,
+                borderColor: '#0a192f',
+                borderRadius: 8,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#ffffff',
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(10, 25, 47, 0.9)',
+                    titleColor: '#00f2fe',
+                    bodyColor: '#ffffff',
+                    borderColor: '#00f2fe',
+                    borderWidth: 2,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+}
+
+// Update chart with new data
+function updateChart() {
+loadChart();
+}
+
+// Notification System Functions
+function showNotification(type, title, message) {
+const notification = document.getElementById(`${type}Notification`);
+const titleElement = document.getElementById(`${type}Title`);
+const messageElement = document.getElementById(`${type}Message`);
+    
+titleElement.textContent = title;
+messageElement.textContent = message;
+    
+notification.classList.remove('hide');
+notification.classList.add('show');
+    
+// Auto-close after 5 seconds
+clearTimeout(notification.autoCloseTimer);
+notification.autoCloseTimer = setTimeout(() => {
+closeNotification(type);
+}, 5000);
+}
+
+function closeNotification(type) {
+const notification = document.getElementById(`${type}Notification`);
+notification.classList.remove('show');
+notification.classList.add('hide');
+setTimeout(() => {
+notification.classList.remove('hide');
+}, 300);
+}
+
+// Show message function (for backward compatibility)
+function showMessage(text, type = 'info') {
+    const notificationType = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+    const title = type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Information';
+    showNotification(notificationType, title, text);
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* Layout */
+.flex-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Cards */
+.card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0,255,255,0.15);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0,255,255,0.25);
+}
+
+/* Inputs */
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    transition: 0.3s;
+}
+
+input:focus, textarea:focus {
+    box-shadow: 0 0 10px cyan;
+}
+
+/* Button */
+button {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 100%;
+}
+
+button:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 15px cyan;
+}
+
+/* Client list */
+#clientList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#clientList li {
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#clientList li:hover {
+    background: rgba(0,255,255,0.1);
+    transform: translateX(5px);
+}
+
+.client-info span {
+    display: block;
+    font-size: 0.8em;
+    color: #ccc;
+}
+
+/* Message panel */
+#messagePanel {
+    margin-top: 20px;
+}
+
+/* Chat messages */
+.messages {
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Message bubbles */
+.message {
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 12px;
+    max-width: 70%;
+    animation: fadeIn 0.3s ease;
+}
+
+.message.sent {
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    color: black;
+    align-self: flex-end;
+}
+
+.message.received {
+    background: rgba(255,255,255,0.1);
+    align-self: flex-start;
+}
+
+/* Input area */
+.message-input {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.message-input input {
+    flex: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+/* Warning Message */
+.warning-message {
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    color: #ff9800;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.warning-message i {
+    margin-right: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+    .flex-wrap {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<h2>Clients</h2>
+
+<div class="flex-wrap">
+
+    <!-- Add Client Form -->
+    <div class="card">
+        <div class="warning-message" id="warningMessage">
+            <i class="fa-solid fa-exclamation-triangle"></i>
+            <span id="warningText"></span>
+        </div>
+        <h3>Add Client</h3>
+        <input id="c_name" placeholder="Full Name">
+        <input id="c_email" placeholder="Email">
+        <input id="c_company" placeholder="Company">
+        <input id="c_phone" placeholder="Phone">
+        <textarea id="c_notes" placeholder="Notes"></textarea>
+        <button onclick="addClient()">Add Client</button>
+    </div>
+
+    <!-- Client List -->
+    <div class="card">
+        <h3>Client List</h3>
+        <ul id="clientList">
+            <!-- Loaded via JavaScript -->
+            <li style="cursor: default; opacity: 0.5;">Loading clients...</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- Messages Panel (Initially Hidden) -->
+<div class="card" id="messagePanel" style="display:none;">
+    <h3>Messages with <span id="msgClientName" style="color: cyan;"></span></h3>
+    <div id="messageList" class="messages"></div>
+    <div class="message-input">
+        <input id="msgContent" placeholder="Type a message...">
+        <button onclick="sendMessage()" style="width: 100px;">Send</button>
+    </div>
+</div>
+<script>
+let currentSelectedClient = null;
+
+async function loadClients() {
+    const listElement = document.getElementById("clientList");
+    
+    try {
+        // Replace with your actual endpoint that returns the JSON list
+        const response = await fetch("/api/clients"); 
+        const data = await response.json();
+
+        // Clear loading state
+        listElement.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            listElement.innerHTML = "<li>No clients found.</li>";
+            return;
+        }
+
+        data.forEach(client => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="client-info">
+                    <strong>${client.username || client.fullName}</strong>
+                    <span>${client.company || 'No Company'}</span>
+                </div>
+                <small style="color: cyan;">View</small>
+            `;
+            li.onclick = () => selectClient(client);
+            listElement.appendChild(li);
+        });
+    } catch (err) {
+        console.error("Failed to load clients:", err);
+        listElement.innerHTML = "<li style='color: #ff4d4d;'>Error loading client database.</li>";
+    }
+}
+
+/**
+ * SELECT CLIENT
+ * Opens the messaging panel for a specific client
+ */
+function selectClient(client) {
+    currentSelectedClient = client;
+    document.getElementById("messagePanel").style.display = "block";
+    document.getElementById("msgClientName").innerText = client.username || client.fullName;
+    
+    // Clear previous messages and add a "Welcome" or history
+    const msgList = document.getElementById("messageList");
+    msgList.innerHTML = `
+        <div class="message received">
+            System: Chat history for ${client.username} is stored locally.
+        </div>
+    `;
+    
+    // Smooth scroll to message panel on mobile
+    document.getElementById("messagePanel").scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * SEND MESSAGE
+ * Placeholder for messaging logic
+ */
+function sendMessage() {
+    const input = document.getElementById("msgContent");
+    const msgList = document.getElementById("messageList");
+    
+    if (!input.value.trim()) return;
+
+    // Create Sent Bubble
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "message sent";
+    msgDiv.innerText = input.value;
+    msgList.appendChild(msgDiv);
+
+    // Auto-scroll to bottom
+    msgList.scrollTop = msgList.scrollHeight;
+
+    // Clear input
+    input.value = "";
+}
+
+/**
+ * ADD CLIENT RECORD
+ * Your provided logic, updated to call loadClients()
+ */
+async function addClient() {
+    const nameInput = document.getElementById("c_name");
+    const emailInput = document.getElementById("c_email");
+    const companyInput = document.getElementById("c_company");
+    const phoneInput = document.getElementById("c_phone");
+    const notesInput = document.getElementById("c_notes");
+
+    if (!nameInput.value.trim()) {
+        showWarning("Please enter a Client Name.");
+        return;
+    }
+
+    const payload = {
+        username: nameInput.value.trim(),
+        email: emailInput.value.trim() || "N/A",
+        company: companyInput.value.trim() || "N/A",
+        phone: phoneInput.value.trim() || "N/A",
+        notes: notesInput.value.trim() || "",
+        role: "Client"
+    };
+
+    try {
+        const response = await fetch("/api/clients/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            // Reset form
+            [nameInput, emailInput, companyInput, phoneInput, notesInput].forEach(i => i.value = "");
+            
+            // RELOAD THE LIST
+            await loadClients();
+            
+            showWarning(`Record for '${payload.username}' added successfully!`);
+        } else {
+            showWarning(`Error: ${result.error || "Unknown error"}`);
+        }
+    } catch (err) {
+        console.error("Failed to add client:", err);
+        showWarning("An error occurred while trying to save the record.");
+    }
+}
+
+// Warning message function
+function showWarning(message) {
+    const warningMessage = document.getElementById('warningMessage');
+    const warningText = document.getElementById('warningText');
+    warningText.textContent = message;
+    warningMessage.style.display = 'block';
+    
+    // Hide warning after 5 seconds
+    setTimeout(() => {
+        warningMessage.style.display = 'none';
+    }, 5000);
+}
+
+// Initialize list on page load
+window.onload = loadClients;
+</script>
+
+{% endblock %}

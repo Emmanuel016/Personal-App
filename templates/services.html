@@ -1,0 +1,473 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+<div class="container animate-fadeIn">
+    <!-- Header Section -->
+    <div class="portal-header mb-8">
+        <div>
+            <h1 class="glow-text">EMMANUEL UGWU: MY PORTFOLIO</h1>
+            <p class="text-cyan-400">Introducing my skills and projects in software development and design.</p>
+        </div>
+        <div class="main-grid">
+        <!-- About Section -->
+        <div class="grid-col-12 mb-6">
+            <div class="card glass-panel about-panel border-t-2 border-cyan-500">
+                <div class="flex flex-col md:flex-row gap-8 items-start">
+                    <div class="flex-1">
+                        <h3 class="mb-4 text-cyan-400"><i class="fa-solid fa-school"></i> Education</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                           <span class="text-xs text-white"> Currently at Dudley Sixth Forms pursuing A-Levels in STEM subjects </span>
+                        </p>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            My academic journey at Dudley Sixth has been focused on Mathematics, Physics, and Computer Science, providing a strong foundation for my technical skills and problem-solving abilities in software development.
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center">
+                        <i class="fa-solid fa-user-space text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- About Section -->
+        <div class="grid-col-12 mb-6">
+            <div class="card glass-panel about-panel border-t-2 border-cyan-500">
+                <div class="flex flex-col md:flex-row gap-8 items-start">
+                    <div class="flex-1">
+                        <h3 class="mb-4 text-cyan-400"><i class="fa-solid fa-user-gear"></i> CONTRACTOR PROFILE</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                            Currently working as a <span class="text-white font-bold">Freelance Software Developer</span>, I leverage my skills in Python, web design, and graphic design to create innovative solutions. Pursuing an A-Level qualification in <span class="text-white font-bold">Mathematics, Physics, and Computer Science</span> at <span class="text-purple-400">Dudley Sixth</span>, my academic background complements my technical expertise.
+                        </p>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            By blending programming proficiency with creative design capabilities, I aim to deliver impactful results for diverse projects across the digital spectrum.
+                        </p>
+                    </div>
+                    <div class="md:w-64 w-full flex flex-wrap gap-2 content-start">
+                        <span class="tag">PYTHON EXPERT</span>
+                        <span class="tag">UI/UX SPECIALIST</span>
+                        <span class="tag">DUDLEY SIXTH</span>
+                        <span class="tag">A-LEVEL STEM</span>
+                        <span class="tag">CREATIVE LEAD</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Why Clients Choose Emmanuel -->
+        <div class="grid-col-12 mb-6">
+            <div class="card glass-panel border-t-2 border-purple-500 p-6">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <div class="flex-1">
+                        <h3 class="mb-4 text-purple-400"><i class="fa-solid fa-thumbs-up"></i> WHY CLIENTS CHOOSE ME</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                            Clients partner with me because I deliver polished digital experiences with strong visual direction, smart code, and reliable delivery. I focus on clean design, fast-loading builds, and clear communication from concept to launch.
+                        </p>
+                        <ul class="choice-list">
+                            <li><i class="fa-solid fa-check-circle"></i> Fast, responsive web and app design tailored to your brand</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Visual systems that improve conversion and usability</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Technical execution in Python, web technologies, and databases</li>
+                            <li><i class="fa-solid fa-check-circle"></i> Strong client support with friendly project updates</li>
+                        </ul>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="mb-4 text-teal-300"><i class="fa-solid fa-briefcase"></i> RECENT EXPERIENCE</h3>
+                        <div class="experience-card">
+                            <div class="experience-tag">Fiverr Graphic</div>
+                            <p class="text-gray-200 font-semibold mb-1">Freelance Software Developer</p>
+                            <p class="text-slate-400 text-xs uppercase tracking-widest mb-3">Fiverr • Jan 2026 - Present • 4 months</p>
+                            <ul class="experience-list">
+                                <li>Developed unique visual directions, including color palettes and typography, to enhance website personality.</li>
+                                <li>Designed custom graphics and icons to create a premium feel for client websites.</li>
+                                <li>Optimized all visual assets for fast loading and seamless responsiveness across devices.</li>
+                            </ul>
+                        </div>
+                        <div class="experience-card mt-5">
+                            <div class="experience-tag accent">Dudley Community Data Collection App</div>
+                            <p class="text-gray-200 font-semibold mb-1">Full-stack Community Platform</p>
+                            <p class="text-slate-400 text-xs uppercase tracking-widest mb-3">Jul 2025 - Aug 2025</p>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                Built a full-stack community data collection application using VS Code, enabling residents to submit local issues, feedback, and community needs through a clean, user-friendly interface.
+                            </p>
+                            <p class="text-gray-400 text-sm leading-relaxed mt-3">
+                                Implemented structured data capture, automated record creation, and an admin dashboard for viewing and managing submissions. Focused on accessibility, responsive UI, and efficient data handling to support community engagement.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Select Service -->
+        <div class="grid-col-12 mb-6">
+            <div class="card glass-panel">
+                <h3 class="mb-6"><i class="fa-solid fa-layer-group"></i> 1. SELECT SERVICE DOMAIN</h3>
+                <div class="service-selector" id="serviceSelector">
+                    <!-- Services injected here via script -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Details & Dispatch -->
+        <div class="grid-col-8">
+            <div class="card glass-panel order-form-panel">
+                <h3><i class="fa-solid fa-file-signature"></i> 2. PROJECT SPECIFICATIONS</h3>
+                
+                <div class="form-group mt-4">
+                    <label>Assigned Department</label>
+                    <input type="text" id="selectedServiceDisplay" readonly placeholder="Select a service from above..." class="readonly-input">
+                </div>
+
+                <div class="form-group mt-6">
+                    <label>Detailed Brief / Requirements</label>
+                    <textarea id="projectDesc" rows="12" class="large-textarea" placeholder="Describe your project goals, preferred technologies, deadlines, and specific features..."></textarea>
+                    <div class="flex justify-between items-center mt-2">
+                        <small class="text-gray-500">The more detail provided, the faster the initial review.</small>
+                        <small id="charCount" class="text-cyan-600 font-mono text-[10px]">0 CHARS</small>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mt-6">
+                    <div class="form-group flex-1">
+                        <label>Target Budget (£)</label>
+                        <input type="number" id="projectBudget" placeholder="Range: £20 - £250" min="20" max="1000">
+                    </div>
+
+                <button class="btn-primary mt-8 w-full py-4 text-lg" id="dispatchBtn" onclick="submitOrder()">
+                    <i class="fa-solid fa-paper-plane"></i> DISPATCH REQUEST
+                </button>
+            </div>
+        </div>
+
+        <!-- Right: Info Panel -->
+        <div class="grid-col-4">
+            <div class="card glass-panel info-card h-full flex flex-col">
+                <h3><i class="fa-solid fa-shield-halved"></i> THE PROTOCOL</h3>
+                <ul class="protocol-list">
+                    <li><i class="fa-solid fa-check"></i> Analysis performed within 24hrs.</li>
+                    <li><i class="fa-solid fa-check"></i> Quotation sent to your dashboard.</li>
+                    <li><i class="fa-solid fa-check"></i> Secure escrow-style payments.</li>
+                    <li><i class="fa-solid fa-check"></i> Weekly progress synchronization.</li>
+                    <li><i class="fa-solid fa-check"></i> Post-delivery technical support.</li>
+                </ul>
+                
+                <div class="mt-auto pt-10 border-t border-white/5 text-center">
+                    <p class="text-xs text-gray-500 mb-4 font-mono uppercase tracking-widest">System Status</p>
+                    <div class="flex justify-center items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                        <span class="text-sm text-white font-bold">EMMANUEL ONLINE</span>
+                    </div>
+                    <p class="text-[10px] text-gray-600 mt-4 italic">Encrypted Connection Verified</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Service Selector Grid */
+.service-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.service-option {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-option:hover {
+    background: rgba(0, 242, 254, 0.04);
+    border-color: rgba(0, 242, 254, 0.4);
+    transform: translateY(-2px);
+}
+
+.service-option.active {
+    background: rgba(0, 242, 254, 0.1);
+    border-color: #00f2fe;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+}
+
+.service-option i {
+    font-size: 20px;
+    color: #00f2fe;
+    opacity: 0.8;
+}
+
+.service-option span {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #cbd5e1;
+}
+
+.choice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.choice-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.choice-list li i {
+    color: #7ef88a;
+    margin-top: 3px;
+    min-width: 18px;
+}
+
+.experience-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 18px;
+    border-radius: 14px;
+}
+
+.experience-tag {
+    display: inline-block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: #a5f3fc;
+    margin-bottom: 10px;
+}
+
+.experience-tag.accent {
+    color: #f9a8d4;
+}
+
+.experience-list {
+    list-style: disc inside;
+    margin: 0;
+    padding-left: 16px;
+    color: #d1d5db;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.experience-list li {
+    margin-bottom: 10px;
+}
+
+/* Form Styling */
+.large-textarea {
+    width: 90%;
+    min-height: 350px; 
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.3;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.large-textarea:focus {
+    border-color: #00f2fe;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.05);
+}
+
+.readonly-input {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px dashed rgba(0, 242, 254, 0.3) !important;
+    color: #00f2fe !important;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.custom-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.tag {
+    background: rgba(0, 242, 254, 0.05);
+    border: 1px solid rgba(0, 242, 254, 0.1);
+    color: #00f2fe;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+/* Protocol List */
+.protocol-list {
+    list-style: none;
+    padding: 0;
+    margin: 25px 0;
+}
+
+.protocol-list li {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.protocol-list li i { color: #00f2fe; font-size: 10px; }
+
+/* Layout Grid */
+.main-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+.grid-col-12 { grid-column: span 12; }
+.grid-col-8 { grid-column: span 8; }
+.grid-col-4 { grid-column: span 4; }
+
+@media (max-width: 992px) {
+    .grid-col-8, .grid-col-4 { grid-column: span 12; }
+}
+</style>
+
+<script>
+const SERVICES = [
+    { name: "Application Development", icon: "fa-laptop-code", price :1500 },
+    { name: "Database Development", icon: "fa-database", price :1000 },
+    { name: "Software Testing", icon: "fa-bug-slash", price :600 },
+    { name: "Web Development", icon: "fa-code", price :2000 },
+    { name: "UX Design (UED)", icon: "fa-user-astronaut", price :950 },
+    { name: "Data Recovery", icon: "fa-shield-virus", price :700 },
+    { name: "Logo Design", icon: "fa-pen-nib", price :150 },
+    { name: "Graphic Design", icon: "fa-palette", price :300 },
+    { name: "Web Design", icon: "fa-browser", price :1200 },
+    { name: "Video Editing", icon: "fa-film", price :250 }
+];
+
+let selectedService = "";
+
+function initServiceGrid() {
+    const grid = document.getElementById("serviceSelector");
+    grid.innerHTML = "";
+    SERVICES.forEach(s => {
+        const opt = document.createElement("div");
+        opt.className = "service-option";
+        opt.innerHTML = `
+            <i class="fa-solid ${s.icon}"></i>
+            <span>${s.name}</span>
+            <div class="service-price" style="margin-top: 12px; font-size: 14px; font-weight: bold; color: #7ef88a; border-top: 1px solid rgba(0, 242, 254, 0.2); padding-top: 8px;">£${s.price.toLocaleString()}</div>
+        `;
+        opt.onclick = () => selectService(s.name, s.price, opt);
+        grid.appendChild(opt);
+    });
+}
+
+function selectService(name, price, element) {
+    selectedService = name;
+    selectedPrice = price;
+    document.getElementById("selectedServiceDisplay").value = `${name} - £${price.toLocaleString()}`;
+    document.querySelectorAll(".service-option").forEach(el => el.classList.remove("active"));
+    element.classList.add("active");
+}
+
+// Character counter for the large brief area
+document.getElementById('projectDesc').addEventListener('input', function(e) {
+    document.getElementById('charCount').textContent = `${e.target.value.length} CHARS`;
+});
+
+async function submitOrder() {
+    if (!selectedService) {
+        showFeedback("Please select a service from the grid first.", "error");
+        return;
+    }
+
+    const desc = document.getElementById("projectDesc").value;
+    const budget = document.getElementById("projectBudget").value;
+
+    if (!desc.trim() || desc.length < 20) {
+        showFeedback("Please provide a more detailed project brief (min 20 chars).", "error");
+        return;
+    }
+
+    const btn = document.getElementById("dispatchBtn");
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> TRANSMITTING DATA...`;
+
+    try {
+        // Mocking the API response for this environment
+        // In a real app, this points to your backend route
+        const response = await fetch(`${window.location.origin}/api/orders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                service_name: selectedService,
+                description: desc,
+                budget: budget,
+                priority: document.getElementById('projectPriority').value,
+                price: selectedPrice
+            })
+        });
+
+        if (response.ok) {
+            handleSuccess();
+        } else {
+            throw new Error("API Failure");
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> RETRY DISPATCH`;
+        showFeedback("Failed to dispatch. Please try again.", "error");
+    }
+}
+
+function handleSuccess() {
+    document.querySelector(".order-form-panel").innerHTML = `
+        <div class="text-center p-12 animate-fadeIn">
+            <div class="inline-block p-4 rounded-full bg-cyan-500/10 mb-6">
+                <i class="fa-solid fa-satellite-dish" style="font-size: 4rem; color: #00f2fe;"></i>
+            </div>
+            <h2 class="glow-text text-3xl font-bold">DISPATCH SUCCESSFUL</h2>
+            <p class="text-gray-400 mt-4 leading-relaxed max-w-md mx-auto">
+                Your project specifications for '<strong>${selectedService}</strong>' have been securely uploaded. 
+                Emmanuel will review the technical brief and respond via your dashboard.
+            </p>
+            <div class="mt-10 flex flex-col gap-4">
+                <button onclick="window.location.href='/client/dashboard'" class="btn-primary py-3">VIEW DASHBOARD</button>
+                <button onclick="location.reload()" class="text-gray-500 text-xs hover:text-white underline">Send another request</button>
+            </div>
+        </div>
+    `;
+}
+
+function showFeedback(msg, type) {
+    // Simple non-alert feedback
+    const btn = document.getElementById("dispatchBtn");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = msg;
+    btn.style.borderColor = type === 'error' ? '#ef4444' : '#22c55e';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.borderColor = '';
+    }, 3000);
+}
+
+document.addEventListener("DOMContentLoaded", initServiceGrid);
+</script>
+{% endblock %}
