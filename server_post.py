@@ -181,7 +181,7 @@ def get_next_id(model):
 @app.route("/")
 def dashboard():
     if not require_login():
-        return redirect("/login")
+        return redirect("/register")
 
     if is_admin():
         users = User.query.all()
