@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: personal-app
+    env: python
+    plan: free
+    pythonVersion: 3.11.4
+    
+    # Build command - run build script
+    buildCommand: bash build.sh
+    
+    # Start command - run start script
+    startCommand: bash start.sh
+    
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+    
+    # Health check
+    healthCheckPath: /login

@@ -1,0 +1,393 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+
+<style>
+/* Centering the Login Terminal */
+.login-wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 430px);
+    align-items: center;
+    gap: 28px;
+    min-height: 82vh;
+    width: min(1120px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 40px 0;
+}
+
+.welcome-panel {
+    position: relative;
+    overflow: hidden;
+    padding: 38px;
+    border-radius: 24px;
+    background:
+        linear-gradient(135deg, rgba(0, 242, 254, 0.12), rgba(255, 0, 127, 0.08)),
+        rgba(10, 25, 47, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.welcome-kicker {
+    color: #00f2fe;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.welcome-panel h1 {
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(34px, 6vw, 62px);
+    line-height: 0.95;
+    margin: 0 0 18px;
+    text-shadow: 0 0 24px rgba(0, 242, 254, 0.28);
+}
+
+.welcome-copy {
+    color: #cbd5e1;
+    font-size: 16px;
+    line-height: 1.65;
+    max-width: 680px;
+    margin-bottom: 24px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.feature-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px;
+    border-radius: 14px;
+    background: rgba(2, 6, 23, 0.42);
+    border: 1px solid rgba(0, 242, 254, 0.12);
+}
+
+.feature-pill i {
+    color: #00f2fe;
+    margin-top: 3px;
+}
+
+.feature-pill strong {
+    display: block;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+}
+
+.feature-pill span {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+/* High-Tech Terminal Card */
+.terminal-card {
+    background: rgba(10, 25, 47, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 242, 254, 0.1);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    animation: terminalEntrance 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes terminalEntrance {
+    from { opacity: 0; transform: scale(0.8) translateY(40px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Scanning Line Animation */
+.terminal-card::after {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(0, 242, 254, 0.1), transparent);
+    animation: scanLine 4s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanLine {
+    0% { top: -100%; }
+    100% { top: 100%; }
+}
+
+/* Header Text */
+.terminal-card h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 32px;
+    color: #fff;
+    text-shadow: 0 0 15px #00f2fe;
+    margin-bottom: 5px;
+}
+
+.auth-status {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    color: #4facfe;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+}
+
+/* Input Styling */
+.field-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.field-container i {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    color: #00f2fe;
+}
+
+input {
+    width: 100%;
+    padding: 14px 15px 14px 45px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 12px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    transition: 0.3s;
+    box-sizing: border-box;
+}
+
+input:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+    background: rgba(0, 0, 0, 0.6);
+    outline: none;
+}
+
+/* Primary Button */
+.btn-auth {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    border: none;
+    border-radius: 12px;
+    color: #0a192f;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.btn-auth:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+}
+
+/* Footer Links */
+.auth-footer {
+    margin-top: 25px;
+    font-size: 14px;
+    color: #8892b0;
+}
+
+.auth-footer a {
+    color: #00f2fe;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-footer a:hover {
+    text-shadow: 0 0 10px cyan;
+}
+
+/* AI Quote */
+.quote-box {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Rajdhani', sans-serif;
+    font-style: italic;
+    color: #4facfe;
+    min-height: 40px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.error-msg {
+    color: #ff007f;
+    background: rgba(255, 0, 127, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 0, 127, 0.2);
+}
+
+@media (max-width: 900px) {
+    .login-wrapper {
+        grid-template-columns: 1fr;
+        width: min(640px, calc(100% - 24px));
+        padding: 24px 0;
+    }
+
+    .welcome-panel {
+        padding: 28px;
+    }
+}
+
+@media (max-width: 560px) {
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .terminal-card {
+        padding: 30px 22px;
+    }
+}
+</style>
+
+<div class="login-wrapper">
+    <section class="welcome-panel" aria-label="Welcome message">
+        <div class="welcome-kicker">Welcome to EMMA.STUDIO</div>
+        <h1>Your project command center.</h1>
+        <p class="welcome-copy">
+            This portal brings your work with us into one clear workspace: request services,
+            track active projects, message directly, review billing, share files, and leave feedback
+            without hunting through scattered emails.
+        </p>
+
+        <div class="feature-grid">
+            <div class="feature-pill">
+                <i class="fa-solid fa-diagram-project"></i>
+                <div><strong>Project tracking</strong><span>See status, budgets, deadlines, and progress in one place.</span></div>
+            </div>
+            <div class="feature-pill">
+                <i class="fa-solid fa-comments"></i>
+                <div><strong>Direct messaging</strong><span>Keep client and admin conversations attached to the work.</span></div>
+            </div>
+            <div class="feature-pill">
+                <i class="fa-solid fa-file-arrow-up"></i>
+                <div><strong>File sharing</strong><span>Send references, deliverables, invoices, and project assets securely.</span></div>
+            </div>
+            <div class="feature-pill">
+                <i class="fa-solid fa-star"></i>
+                <div><strong>Feedback and billing</strong><span>Submit reviews, confirm payments, and keep records organized.</span></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="terminal-card">
+        <div class="auth-status">
+            Secure workspace access
+        </div>
+        
+        <h2>{{ 'Create Account' if register else 'Sign In' }}</h2>
+
+        <form method="POST">
+            <div class="field-container">
+                <i class="fa-solid fa-user-secret"></i>
+                <input name="username" placeholder="Credential ID" required autocomplete="username">
+            </div>
+            
+            <div class="field-container">
+                <i class="fa-solid fa-key"></i>
+                <input name="password" type="password" placeholder="Passcode" required autocomplete="current-password">
+            </div>
+
+            {% if error %}
+                <div class="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+            {% endif %}
+
+            <button type="submit" class="btn-auth">
+                {{ 'Create Access' if register else 'Enter Portal' }}
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            {% if not register %}
+                New here? <a href="/register">Create your account</a>
+            {% else %}
+                Already registered? <a href="/login">Sign in to your account</a>
+            {% endif %}
+        </div>
+
+        <div class="quote-box" id="quote"></div>
+    </div>
+</div>
+
+<script>
+const quotes = [
+    "NEURAL LINK: ESTABLISHED",
+    "THE FUTURE BELONGS TO THOSE WHO CODE IT.",
+    "SECURITY IS NOT A FEATURE, IT'S A MINDSET.",
+    "Beyond the code, lies the future.",
+    "THE FUTURE IS NOW.",
+    "Believe in the code, and the code will believe in you.",
+    "HACK THE PLANET, ONE LINE AT A TIME.",
+    "DREAM IN CODE. BUILD IN REALITY.",
+    "LOGIN GATEWAY: SECURED",
+    "DECRYPTING CORE ASSETS...",
+    "You might not think that programmers are artists, but programming is an extremely creative profession. It’s logic-based creativity.",
+    "COMPILING DREAMS. EXECUTING PURPOSE.",
+    "ACCESS NODE: STABILITY CONFIRMED.",
+    "UPDATING CREATIVE FIRMWARE...",
+    "SYSTEM OVERRIDE: INNOVATION ENABLED.",
+    "BOOT SEQUENCE: VISION ONLINE.",
+    "ENCRYPTION LAYER: FORTIFIED.",
+    "REWRITING SOURCE OF POSSIBILITY.",
+    "LOADING NEXT-GEN INTELLIGENCE...",
+    "AUTH PROTOCOL: VERIFIED & ACTIVE.",
+    "UPGRADING INTERNAL ARCHITECTURE.",
+    "RECALIBRATING CORE SYSTEMS...",
+    "VISION MODULE: SYNCHRONIZED.",
+    "DATA STREAM: FLOW OPTIMAL.",
+    "INITIATING CREATIVE SUBROUTINES...",
+    "FIREWALL STATUS: UNBREAKABLE.",
+    "DEPLOYING FUTURE FRAMEWORK.",
+    "CODEBASE: EVOLVING IN REAL TIME.",
+    "SCANNING ENVIRONMENT: POTENTIAL DETECTED.",
+    "REBOOTING LIMITS. EXPANDING CAPACITY.",
+];
+
+const quoteEl = document.getElementById("quote");
+function rotateQuote() {
+    quoteEl.style.transition = "opacity 0.5s ease";
+    quoteEl.style.opacity = 0;
+
+    // pick a random quote
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    const randomItem = quotes[randomIndex];
+
+    setTimeout(() => {
+        quoteEl.textContent = randomItem;
+        quoteEl.style.opacity = 0.7;
+    }, 10);
+}
+
+rotateQuote();
+setInterval(rotateQuote, 4000);
+
+</script>
+
+{% endblock %}

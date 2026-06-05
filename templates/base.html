@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EmmaStudio | AI Core</title>
+    <!-- Add Futuristic Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ===== GLOBAL STYLES ===== */
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    color: #e2e8f0;
+    /* Deep space/tech gradient background */
+    background: linear-gradient(135deg, #050b14 0%, #0a192f 50%, #110b1f 100%);
+    overflow-x: hidden;
+    min-height: 100vh;
+    /* Mobile optimizations */
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 0;
+}
+
+/* ===== AI NEURAL CANVAS ===== */
+#bgCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -3;
+    opacity: 0.6;
+}
+
+/* ===== 3D DIGITAL LANDSCAPE (Robotics Theme) ===== */
+.cyber-landscape {
+    position: fixed;
+    bottom: -20%;
+    left: -50%;
+    width: 200%;
+    height: 60vh;
+    background-image: 
+        linear-gradient(rgba(0, 242, 254, 0.2) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(0, 242, 254, 0.2) 2px, transparent 2px);
+    background-size: 50px 50px;
+    transform: perspective(600px) rotateX(75deg);
+    transform-origin: top;
+    z-index: -2;
+    animation: moveGrid 15s linear infinite;
+    box-shadow: inset 0 100px 100px rgba(5, 11, 20, 1); /* Fades grid into the horizon */
+}
+
+@keyframes moveGrid {
+    0% { transform: perspective(600px) rotateX(75deg) translateY(0); }
+    100% { transform: perspective(600px) rotateX(75deg) translateY(50px); }
+}
+
+/* ===== NAVBAR HUD ===== */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    background: rgba(10, 25, 47, 0.7);
+    /*backdrop-filter: blur(16px);*/
+    border-bottom: 2px solid rgba(0, 242, 254, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 242, 254, 0.1);
+    /* Mobile responsiveness */
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.brand {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 10px #00f2fe;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+nav a {
+    color: #8892b0;
+    text-decoration: none;
+    margin-left: 30px;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+nav a:hover, nav a.active {
+    color: #00f2fe;
+    text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+}
+
+/* ===== CONTAINER ===== */
+.container {
+    padding: 40px 30px;
+    max-width: 1200px;
+    margin: auto;
+    position: relative;
+    z-index: 10;
+}
+
+/* ===== MOBILE NAVIGATION ===== */
+.mobile-menu-toggle {
+    display: none;
+    color: #00f2fe;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 10px;
+}
+
+.nav-links {
+    display: flex;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(10, 25, 47, 0.95);
+        flex-direction: column;
+        padding: 20px;
+        border-top: 2px solid rgba(0, 242, 254, 0.3);
+        z-index: 1000;
+    }
+    
+    .nav-links.active {
+        display: flex;
+    }
+    
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .brand {
+        font-size: 18px;
+    }
+    
+    nav {
+        padding: 10px 20px;
+    }
+    
+    nav a {
+        margin-left: 0;
+        margin-bottom: 15px;
+        font-size: 14px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        background: rgba(0, 242, 254, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .container {
+        padding: 20px 15px;
+    }
+    
+    .cyber-landscape {
+        display: none;
+    }
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #050b14; }
+::-webkit-scrollbar-thumb { background: #00f2fe; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+    <!-- Background Elements -->
+    <canvas id="bgCanvas"></canvas>
+    <div class="cyber-landscape"></div>
+
+    <!-- Navigation HUD -->
+    <nav>
+        <div class="brand">
+            <i class="fa-solid fa-microchip"></i> EMMA.STUDIO
+        </div>
+        
+        <!-- Mobile Menu Toggle -->
+        <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+            <i class="fa-solid fa-bars"></i>
+        </div>
+        
+        <div class="nav-links" id="navLinks">
+            <a href="/"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="/clients"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="/projects"><i class="fa-solid fa-building"></i> Projects</a>
+            <a href="/logout"><i class="fa-solid fa-sign-out-alt"></i> logout</a>
+          <!--- <a href="/services"><i class="fa-solid fa-user"></i>Your Profile</a>-->
+        </div>
+    </nav>
+
+    <!-- Main Content Injection -->
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+// Mobile Menu Toggle
+function toggleMobileMenu() {
+    const navLinks = document.getElementById('navLinks');
+    if (navLinks) {
+        navLinks.classList.toggle('active');
+    }
+}
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', function(event) {
+    const navLinks = document.getElementById('navLinks');
+    const menuToggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (navLinks && menuToggle && !navLinks.contains(event.target) && !menuToggle.contains(event.target)) {
+        navLinks.classList.remove('active');
+    }
+});
+</script>
+<script src="/static/app.js"></script>
+</body>
+</html>

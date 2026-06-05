@@ -1,0 +1,729 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+<div class="container animate-fadeIn">
+    <!-- Header Section -->
+    <div class="portal-header">
+        <div>
+            <h1 class="glow-text">YOUR PERSONAL DASHBOARD</h1>
+            <p class="text-cyan-400">Welcome back, <span id="clientName">{{ session.get('user', 'Client') }}</span>. Happy to see you.</p>
+            <p class="text-cyan-400">Let's continue from where we left off. We are here to help you turn your software ideas into reality!</p>
+            <p class="text-cyan-700">Want a quick tour of the website?</p>
+            <a href="/client/register" class="tour-link"><i class="fa-solid fa-circle-info mr-1"></i>Click here!</a>
+        </div>
+        <div class="status-badge">
+            <div class="pulse-dot"></div>
+            SECURED CONNECTIONS
+        </div>
+    </div>
+    
+    <!-- Quick Stats Grid -->
+    <div class="flex-wrap mb-6" style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="card stat-card">
+            <i class="fa-solid fa-diagram-project"></i>
+            <div class="stat-value" id="activeProjects">0</div>
+            <div class="stat-label">Active Projects</div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-credit-card"></i>
+            <div class="stat-value" id="totalPaid">£0.00</div>
+            <div class="stat-label">Total Investment</div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-hourglass-half"></i>
+            <div class="stat-value" id="pendingApprovals">0</div>
+            <div class="stat-label">Pending Requests</div>
+        </div>
+    </div>
+
+    <!-- Secure Dynamic Toast Frame -->
+    <div id="portalNotification" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; padding: 15px 20px; border-radius: 12px; font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 1px; color: white; background: rgba(10, 25, 47, 0.95); border: 1px solid #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); animation: fadeIn 0.3s ease-out;">
+        <span id="portalNotificationText"></span>
+    </div>
+
+    <!-- Main Adaptable Grid for Laptops -->
+    <div class="main-grid">
+        <!-- Project Tracking Section -->
+        <div class="grid-col-8">
+            <div class="card glass-panel h-full">
+                <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                        <i class="fa-solid fa-list-check"></i> PROJECT STATUS
+                    </h3>
+                </div>
+                <div class="project-grid" id="clientProjectList" style="padding: 20px;">
+                    <div class="loading-placeholder">Scanning for linked or pending projects...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Uplink (Flexible Frame Heights for Shorter Laptops) -->
+        <div class="grid-col-4">
+            <div class="card glass-panel chat-panel h-full">
+                <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                        <i class="fa-solid fa-comments"></i> MESSAGES
+                    </h3>
+                    <span class="text-[10px] text-cyan-400 animate-pulse font-bold tracking-wider">Direct uplink</span>
+                </div>
+                <div class="chat-container cyber-scroll" id="chatBox">
+                    <div class="text-center opacity-50 text-[11px] mt-10">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-cyan-400"></i>
+                        <p>Syncing secure channel history...</p>
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input id="clientFileInput" type="file" style="display: none;">
+                    
+                    <!-- Clean, modern circular plus sign uploader -->
+                    <button onclick="document.getElementById('clientFileInput').click()" 
+                        class="plus-upload-btn"
+                        title="Upload File"
+                        onmouseover="this.style.borderColor='#00f2fe'; this.style.color='#00f2fe'; this.style.background='rgba(0, 242, 254, 0.05)';"
+                        onmouseout="this.style.borderColor='rgba(0, 242, 254, 0.2)'; this.style.color='#8892b0'; this.style.background='rgba(255, 255, 255, 0.03)';">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+
+                    <!-- Text input -->
+                    <input type="text" id="msgInput" placeholder="Message directly..." onkeypress="if(event.key==='Enter') sendClientMsg()">
+
+                    <!-- Send button -->
+                    <button onclick="sendClientMsg()" class="chat-send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+.portal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    border-left: 4px solid #00f2fe;
+    padding-left: 20px;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.tour-link {
+    color: #00f2fe;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.tour-link:hover {
+    color: white;
+    text-shadow: 0 0 8px #00f2fe;
+}
+
+.glow-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    margin: 0;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+    color: white;
+    text-align: left;
+    display: block;
+}
+
+.status-badge {
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #00f2fe;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #00f2fe;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00f2fe;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 180px;
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #00f2fe;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.1);
+}
+
+.stat-card i {
+    font-size: 20px;
+    color: #00f2fe;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Rajdhani', sans-serif;
+    color: white;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #8892b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.glass-panel {
+    background: rgba(10, 25, 47, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.project-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.project-item:hover {
+    border-color: rgba(0, 242, 254, 0.3);
+    background: rgba(0, 242, 254, 0.02);
+}
+
+.progress-container {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    margin-top: 15px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00f2fe, #4facfe);
+    box-shadow: 0 0 10px #00f2fe;
+    transition: width 1s ease-in-out;
+}
+
+/* Highly adaptable layout frame for laptops and taller viewports */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 400px;
+    max-height: calc(100vh - 280px);
+}
+
+.chat-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: radial-gradient(circle at center, rgba(10,20,40,0) 0%, rgba(0,0,0,0.2) 100%);
+    min-height: 250px;
+}
+
+.msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 15px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: white;
+    position: relative;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.msg.admin {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.06);
+    border-bottom-left-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.msg.me {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #0072ff, #00c6ff);
+    border-bottom-right-radius: 2px;
+    box-shadow: 0 4px 15px rgba(0, 114, 255, 0.2);
+    color: #0a192f;
+    font-weight: 600;
+}
+
+.msg-time {
+    display: block;
+    font-size: 8px;
+    opacity: 0.6;
+    margin-top: 6px;
+    text-align: right;
+}
+
+.msg.me .msg-time {
+    color: #0a192f;
+    opacity: 0.8;
+}
+
+/* Consolidated responsive Chat input layout */
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0,0,0,0.2);
+    align-items: center;
+}
+
+.plus-upload-btn {
+    width: 40px; 
+    height: 40px; 
+    background: rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(0, 242, 254, 0.2); 
+    border-radius: 10px; 
+    font-size: 15px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    color: #8892b0; 
+    transition: all 0.2s ease; 
+    flex-shrink: 0;
+}
+
+.chat-input-area input[type="text"] {
+    flex-grow: 1;
+    background: #112240;
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    border-radius: 10px;
+    color: white;
+    padding: 11px 14px;
+    outline: none;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+.chat-input-area input[type="text"]:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+}
+
+.chat-send-btn {
+    background: #00f2fe;
+    color: #0a192f;
+    border: none;
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    transform: scale(1.05);
+    background: white;
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+}
+
+.grid-col-8 { grid-column: span 8; }
+.grid-col-4 { grid-column: span 4; }
+
+/* Responsive break points (Laptops and Tablets) */
+@media (max-width: 1024px) {
+    .grid-col-8, .grid-col-4 { grid-column: span 12; }
+    
+    .portal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .glow-text {
+        font-size: 1.8rem;
+    }
+    
+    .chat-panel {
+        height: auto;
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 480px) {
+    .portal-header {
+        padding-left: 10px;
+    }
+    .status-badge {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+}
+
+/* Scrollbar tweaks for chat */
+.cyber-scroll::-webkit-scrollbar { width: 4px; }
+.cyber-scroll::-webkit-scrollbar-track { background: transparent; }
+.cyber-scroll::-webkit-scrollbar-thumb { background: #233554; border-radius: 10px; }
+.cyber-scroll::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+</style>
+
+<script>
+/**
+ * SafeFetch logic (No aggressive logouts)
+ */
+async function safeFetch(endpoint, options = {}, isBackground = false) {
+    try {
+        const response = await fetch(endpoint, options);
+        
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+            if (!isBackground) console.warn("Session potentially expired. Received HTML.");
+            return null;
+        }
+
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (err) {
+        if (!isBackground) console.error(`Fetch error for ${endpoint}:`, err);
+        return null;
+    }
+}
+
+/**
+ * HTML escape function to prevent XSS
+ */
+function escapeHtml(text) {
+    if (text === null || text === undefined || typeof text !== 'string') return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Custom Toast notification instead of standard block alert
+ */
+function showToast(message, isSuccess = false) {
+    if (/session|authentication required|unauthorized|forbidden|too many requests|429|log in again/i.test(String(message || ''))) {
+        return;
+    }
+
+    const toast = document.getElementById("portalNotification");
+    const toastText = document.getElementById("portalNotificationText");
+    if (!toast || !toastText) return;
+
+    toastText.textContent = message;
+    if (isSuccess) {
+        toast.style.borderColor = "#10b981";
+        toast.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
+    } else {
+        toast.style.borderColor = "#f59e0b";
+        toast.style.boxShadow = "0 0 15px rgba(245, 158, 11, 0.4)";
+    }
+    
+    toast.style.display = "block";
+    
+    clearTimeout(window.portalToastTimer);
+    window.portalToastTimer = setTimeout(() => {
+        toast.style.display = "none";
+    }, 4000);
+}
+
+/**
+ * Load Main Data (Stats & Projects)
+ */
+async function loadClientData() {
+    const dashData = await safeFetch('/api/dashboard');
+    if (dashData) {
+        const total = parseFloat(dashData.total_paid || 0);
+        document.getElementById("totalPaid").textContent = `£${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+
+    const projects = await safeFetch('/api/projects');
+    if (projects) {
+        renderProjects(projects);
+    }
+
+    loadMessages(false);
+}
+
+function renderProjects(projects) {
+    const projList = document.getElementById("clientProjectList");
+    if (!projList) return;
+    projList.innerHTML = "";
+    
+    let activeCount = 0;
+    let pendingCount = 0;
+
+    projects.forEach(p => {
+        const status = p.status || 'Pending';
+        if (['Active', 'In Progress'].includes(status)) activeCount++;
+        if (status.includes('Approval')) pendingCount++;
+
+        let progress = 10;
+        if (status === 'Completed') progress = 100;
+        else if (status === 'Active') progress = 60;
+        else if (status === 'Pending') progress = 20;
+
+        projList.innerHTML += `
+            <div class="project-item">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h4 style="margin:0; color:#00f2fe; font-family:'Rajdhani'; font-weight: 700;">${p.title}</h4>
+                    <span style="font-size:10px; color:#8892b0">${p.date_created || ''}</span>
+                </div>
+                <p style="font-size:13px; color:#8892b0; margin:10px 0">${p.desc || 'System asset online.'}</p>
+                <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px; color:#8892b0">
+                    <span>STATUS: <b style="color:#00f2fe">${status.toUpperCase()}</b></span>
+                    <span>${progress}%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${progress}%"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById("activeProjects").textContent = activeCount;
+    document.getElementById("pendingApprovals").textContent = pendingCount;
+}
+
+/**
+ * Load & Render Chat History
+ */
+async function loadMessages(isBackground = true) {
+    const msgs = await safeFetch('/api/messages/0', {}, isBackground);
+    const box = document.getElementById("chatBox");
+    
+    if (!box) return;
+
+    if (!msgs) {
+        if (!isBackground) {
+            box.innerHTML = `
+                <div class="text-center opacity-50 text-[11px] mt-10">
+                    <i class="fa-solid fa-satellite-dish text-2xl mb-2 text-cyan-400"></i>
+                    <p>Uplink established. Awaiting communication...</p>
+                </div>`;
+        }
+        return;
+    }
+    
+    const filesData = await safeFetch('/api/messages/0/files', {}, true);
+    const filesMap = {};
+    if (filesData && filesData.files) {
+        filesData.files.forEach(f => {
+            if (!filesMap[f.message_id]) filesMap[f.message_id] = [];
+            filesMap[f.message_id].push(f);
+        });
+    }
+    
+    if (box.dataset.count != msgs.length) {
+        box.innerHTML = "";
+        
+        if (msgs.length === 0) {
+            box.innerHTML = `
+                <div class="text-center opacity-50 text-[11px] mt-10">
+                    <i class="fa-solid fa-satellite-dish text-2xl mb-2 text-cyan-400"></i>
+                    <p>Connection active. No previous messages.</p>
+                </div>`;
+        } else {
+            msgs.forEach(m => {
+                const isMe = m.from !== 'admin';
+                const timeStr = m.timestamp ? new Date(new Date(m.timestamp).getTime() + 60 * 60 * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                
+                const div = document.createElement('div');
+                div.className = `msg ${isMe ? 'me' : 'admin'}`;
+                
+                let filesHtml = '';
+                if (filesMap[m.id] && filesMap[m.id].length > 0) {
+                    filesHtml = '<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">';
+                    filesMap[m.id].forEach(f => {
+                        const fileSizeKb = (f.file_size / 1024).toFixed(1);
+                        filesHtml += `
+                            <a href="/api/files/${f.id}/download" 
+                               style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid #00f2fe; border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-paperclip"></i>
+                                <span>${escapeHtml(f.original_filename)} (${fileSizeKb}KB)</span>
+                            </a>
+                        `;
+                    });
+                    filesHtml += '</div>';
+                }
+                
+                div.innerHTML = `
+                    ${m.content}
+                    ${filesHtml}
+                    ${timeStr ? `<span class="msg-time">${timeStr}</span>` : ''}
+                `;
+                box.appendChild(div);
+            });
+        }
+        
+        box.scrollTop = box.scrollHeight;
+        box.dataset.count = msgs.length;
+    }
+}
+
+/**
+ * Transmit Client Message
+ */
+async function sendClientMsg() {
+    const input = document.getElementById("msgInput");
+    const val = input.value.trim();
+    if(!val) return;
+
+    input.value = "";
+    
+    const box = document.getElementById("chatBox");
+    
+    if (box.querySelector('.fa-satellite-dish')) {
+        box.innerHTML = '';
+    }
+
+    const tempMsg = document.createElement('div');
+    tempMsg.className = "msg me";
+    tempMsg.style.opacity = "0.6";
+    tempMsg.innerHTML = `${val} <span class="msg-time">Sending...</span>`;
+    box.appendChild(tempMsg);
+    box.scrollTop = box.scrollHeight;
+
+    await safeFetch('/api/messages/0', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ content: val, from: "client" })
+    });
+
+    loadMessages(true);
+}
+
+async function uploadClientFile() {
+    const fileInput = document.getElementById('clientFileInput');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showToast('Please select a file');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    
+    if (file.size > 100 * 1024 * 1024) {
+        showToast('File too large (max 100MB)');
+        fileInput.value = '';
+        return;
+    }
+
+    const fileNotifyMsg = `📎 File: ${file.name}`;
+    
+    const msgResponse = await safeFetch(`/api/messages/0`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ 
+            content: fileNotifyMsg,
+            from: "client"
+        })
+    });
+
+    if (!msgResponse) {
+        showToast('Failed to create message reference');
+        return;
+    }
+
+    const messagesData = await safeFetch(`/api/messages/0`);
+    if (!messagesData || !Array.isArray(messagesData) || messagesData.length === 0) {
+        showToast('Failed to get message reference');
+        return;
+    }
+
+    const latestMsg = messagesData[messagesData.length - 1];
+    const messageId = latestMsg.id;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch(`/api/messages/${messageId}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            showToast(`Upload failed: ${error.error || 'Unknown error'}`);
+            fileInput.value = '';
+            return;
+        }
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            showToast(`✓ File "${file.name}" uploaded successfully!`, true);
+            fileInput.value = ''; 
+            loadMessages(true);
+        } else {
+            showToast("Upload failed");
+            fileInput.value = '';
+        }
+    } catch (error) {
+        console.error('File upload error:', error);
+        showToast("Network error during upload");
+        fileInput.value = '';
+    }
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'clientFileInput') {
+        uploadClientFile();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadClientData();
+    setInterval(() => {
+        loadMessages(true);
+        loadClientData();
+    }, 5000);
+});
+</script>
+{% endblock %}
