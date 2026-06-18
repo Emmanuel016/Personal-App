@@ -306,9 +306,8 @@ This project is proprietary. All rights reserved.
 ## Contact
 
 - **Developer**: Emmanuel Ugwu
-- **Email**: your-email@example.com
-- **Portfolio**: [Your Website]
-
+- **Email**: ugwuemmanuel074'gmail.com
+- **LinkedIn Portfolio**: https://www.linkedin.com/in/emmanuel-ugwu-38493b390/
 ---
 
 **Status**: ✅ Ready for Deployment
