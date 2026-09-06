@@ -62,8 +62,7 @@ render-build.log
 *.sql
 database_backup_*
 export_*
-pdf_cache/
-uploads/
+
 
 # Development and testing files
 *_old.html

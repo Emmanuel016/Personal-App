@@ -624,7 +624,7 @@ if (document.readyState === 'loading') {
     window.cookieConsent = new CookieConsentManager();
 }
 
-// Global function to open settings from anywhere
+// Global function to open settings from anywhere git config --list
 window.openCookieSettings = function() {
     if (window.cookieConsent) {
         window.cookieConsent.showSettings();
