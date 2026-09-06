@@ -1,0 +1,42 @@
+# Core Flask framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Production WSGI server
+Gunicorn==23.0.0
+
+# WebSocket support
+Flask-SocketIO==5.3.6
+python-socketio==5.11.0
+eventlet==0.33.3
+
+# Database
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+
+# Security & Authentication
+bcrypt==4.1.2
+Flask-WTF==1.2.1
+
+# Rate limiting
+Flask-Limiter==3.5.0
+
+# Session storage (optional - for production scaling)
+Flask-Session==0.5.0
+redis==5.0.1
+
+# Email support
+Flask-Mail==0.9.1
+
+# PDF generation
+reportlab==4.0.7
+
+# Scheduled tasks
+APScheduler==3.10.4
+
+# HTTP requests
+requests==2.31.0
+
+# Environment configuration
+python-dotenv==1.0.0

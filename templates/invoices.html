@@ -1,0 +1,1140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="invoice-container">
+    <div class="invoice-header">
+        <h2><i class="fa-solid fa-file-invoice-dollar"></i> Invoice Management</h2>
+        <button class="btn-primary" onclick="showGenerateModal()">
+            <i class="fa-solid fa-plus"></i> Generate Invoice
+        </button>
+    </div>
+    
+    <!-- Invoice Stats -->
+    <div class="invoice-stats">
+        <div class="stat-card">
+            <div class="stat-value" id="totalInvoices">0</div>
+            <div class="stat-label">Total Invoices</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="pendingAmount">£0</div>
+            <div class="stat-label">Pending Amount</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="paidAmount">£0</div>
+            <div class="stat-label">Collected Amount</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="overdueCount">0</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+    
+    <div class="invoice-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">Pending</button>
+        <button class="filter-btn" data-filter="paid">Paid</button>
+        <button class="filter-btn" data-filter="overdue">Overdue</button>
+    </div>
+    
+    <div class="invoice-list" id="invoiceList">
+        <div class="loading">Loading invoices...</div>
+    </div>
+</div>
+
+<!-- Generate Invoice Modal -->
+<div id="generateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-invoice"></i> Generate Invoice</h3>
+            <button class="close-btn" onclick="closeGenerateModal()">&times;</button>
+        </div>
+        <div class="modal-body custom-scrollbar" style="max-height: 65vh; overflow-y: auto; padding-right: 12px;">
+            <div class="form-group">
+                <label>Select Project</label>
+                <select id="projectSelect">
+                    <option value="">Loading projects...</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Invoice Type</label>
+                    <select id="invoiceType">
+                        <option value="milestone">Milestone (50%)</option>
+                        <option value="completion">Completion (Remaining)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Due Date (Days)</label>
+                    <input type="number" id="dueDays" value="30" min="1">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Custom Amount (Optional)</label>
+                    <input type="number" id="customAmount" placeholder="Auto-calculated" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Payment Methods</label>
+                    <input type="text" id="paymentMethods" value="PayPal, Bank Transfer" placeholder="e.g., PayPal, Bank Transfer">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Late Fee</label>
+                    <input type="text" id="lateFee" value="5% per month on overdue amount" placeholder="e.g., 5% per month">
+                </div>
+                <div class="form-group">
+                    <label>Early Discount</label>
+                    <input type="text" id="earlyDiscount" value="2% discount if paid within 10 days" placeholder="e.g., 2% discount if paid within 10 days">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Payment Terms</label>
+                <textarea id="paymentTerms" rows="1">Payment due within 30 days</textarea>
+            </div>
+            <div class="form-group" style="margin-bottom: 4px;">
+                <label>Notes</label>
+                <textarea id="invoiceNotes" rows="1">Thank you for your business!</textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeGenerateModal()">Cancel</button>
+            <button class="btn-primary" onclick="generateInvoice()">
+                <i class="fa-solid fa-paper-plane"></i> Generate & Send Email
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div id="pdfPreviewModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; height: 90vh;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-pdf"></i> Invoice PDF Preview</h3>
+            <button class="close-btn" onclick="closePDFPreviewModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="height: calc(100% - 140px); padding: 0;">
+            <iframe id="pdfPreviewFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closePDFPreviewModal()">Close</button>
+            <button class="btn-primary" id="downloadFromPreviewBtn">
+                <i class="fa-solid fa-download"></i> Download PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Modal -->
+<div id="warningModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 id="warningTitle"><i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+            <button class="close-btn" onclick="closeWarningModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="warningMessage" style="color: #e2e8f0; margin: 0;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-primary" onclick="closeWarningModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 id="confirmTitle"><i class="fa-solid fa-circle-question"></i> Confirm</h3>
+            <button class="close-btn" onclick="closeConfirmModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage" style="color: #e2e8f0; margin: 0;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+            <button class="btn-primary" id="confirmYesBtn">Yes</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+.invoice-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    background: linear-gradient(135deg, rgba(10, 25, 47, 0.95) 0%, rgba(15, 35, 60, 0.95) 100%);
+    min-height: 100vh;
+}
+
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 242, 254, 0.2);
+}
+
+.invoice-header h2 {
+    color: #00f2fe;
+    margin: 0;
+    text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: #0a192f;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
+    filter: brightness(1.1);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(0, 242, 254, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Invoice Stats */
+.invoice-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, rgba(10, 25, 47, 0.9) 0%, rgba(15, 35, 60, 0.9) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00f2fe, #4facfe);
+    opacity: 0.5;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(0, 242, 254, 0.4);
+    box-shadow: 0 10px 40px rgba(0, 242, 254, 0.15);
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #00f2fe;
+    font-family: 'Rajdhani', sans-serif;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+}
+
+.stat-label {
+    color: #8892b0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.invoice-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: rgba(10, 25, 47, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-btn {
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    color: #00f2fe;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.filter-btn:hover {
+    background: rgba(0, 242, 254, 0.15);
+    transform: translateY(-2px);
+    border-color: rgba(0, 242, 254, 0.4);
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: #0a192f;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+}
+
+.invoice-list {
+    display: grid;
+    gap: 15px;
+}
+
+.invoice-card {
+    background: linear-gradient(135deg, rgba(10, 25, 47, 0.9) 0%, rgba(15, 35, 60, 0.9) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+}
+
+.invoice-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00f2fe, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.invoice-card:hover {
+    border-color: rgba(0, 242, 254, 0.4);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 242, 254, 0.15);
+}
+
+.invoice-card:hover::before {
+    opacity: 1;
+}
+
+.invoice-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.invoice-number {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #00f2fe;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+}
+
+.invoice-status {
+    padding: 6px 16px;
+    border-radius: 25px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.invoice-status.pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+.invoice-status.paid {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.invoice-status.overdue {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.invoice-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.invoice-detail {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.invoice-detail:hover {
+    border-color: rgba(0, 242, 254, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.invoice-detail label {
+    color: #64748b;
+    font-size: 10px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.invoice-detail span {
+    color: #e2e8f0;
+    font-weight: 500;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+}
+
+.invoice-amount {
+    font-size: 22px;
+    font-weight: 700;
+    color: #00f2fe;
+    text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+.invoice-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    font-size: 11px;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+.pay-btn {
+    background: #00f2fe;
+    color: #0a192f;
+}
+
+.pay-btn:hover {
+    background: #00d4e0;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3);
+}
+
+.pdf-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pdf-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.email-btn {
+    background: rgba(0, 242, 254, 0.1);
+    color: #00f2fe;
+    border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.email-btn:hover {
+    background: rgba(0, 242, 254, 0.2);
+}
+
+.loading {
+    text-align: center;
+    color: #64748b;
+    padding: 40px;
+}
+
+.no-invoices {
+    text-align: center;
+    color: #64748b;
+    padding: 40px;
+}
+
+.text-red-400 {
+    color: #f87171;
+}
+
+.text-green-400 {
+    color: #4ade80;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(10, 25, 47, 0.98) 0%, rgba(15, 35, 60, 0.98) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    margin: 5% auto;
+    animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(0, 242, 254, 0.1);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(79, 172, 254, 0.05) 100%);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #00f2fe;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #8892b0;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.modal-header h3 i {
+    margin-right: 8px;
+    opacity: 0.9;
+}
+
+.close-btn:hover {
+    color: #00f2fe;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Custom Scrollbar for Modal Body */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 242, 254, 0.3);
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 242, 254, 0.6);
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    color: #8892b0;
+    font-size: 11px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.form-group select,
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+.form-group select::placeholder,
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Inter', sans-serif;
+}
+
+.form-group select:focus::placeholder,
+.form-group input:focus::placeholder,
+.form-group textarea:focus::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .invoice-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .invoice-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .invoice-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .invoice-container {
+        padding: 20px 16px;
+    }
+    
+    .invoice-header h2 {
+        font-size: 24px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .invoice-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .invoice-filters {
+        flex-direction: column;
+    }
+    
+    .filter-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .invoice-actions {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0px;
+    }
+}
+</style>
+
+<script>
+let invoices = [];
+let projects = [];
+let currentFilter = 'all';
+
+async function loadInvoices() {
+    try {
+        const response = await fetch('/api/invoices');
+        const data = await response.json();
+        
+        if (data.invoices) {
+            invoices = data.invoices;
+            updateStats();
+            renderInvoices();
+        }
+    } catch (error) {
+        console.error('Error loading invoices:', error);
+        document.getElementById('invoiceList').innerHTML = '<div class="no-invoices">Error loading invoices</div>';
+    }
+}
+
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        
+        console.log('Projects response:', data);
+        
+        if (data.data) {
+            projects = data.data;
+            updateProjectSelect();
+        } else {
+            console.error('No data in projects response');
+            const select = document.getElementById('projectSelect');
+            if (select) {
+                select.innerHTML = '<option value="">No projects available</option>';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+        const select = document.getElementById('projectSelect');
+        if (select) {
+            select.innerHTML = '<option value="">Error loading projects</option>';
+        }
+    }
+}
+
+function updateProjectSelect() {
+    const select = document.getElementById('projectSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Select a Project --</option>';
+    projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.title} - £${parseFloat(project.price || 0).toFixed(2)}`;
+        select.appendChild(option);
+    });
+}
+
+function updateStats() {
+    const totalInvoices = invoices.length;
+    const pendingAmount = invoices
+        .filter(inv => inv.status === 'pending' || inv.status === 'overdue')
+        .reduce((sum, inv) => sum + inv.amount, 0);
+    const paidAmount = invoices
+        .filter(inv => inv.status === 'paid')
+        .reduce((sum, inv) => sum + inv.amount, 0);
+    const overdueCount = invoices.filter(inv => inv.status === 'overdue').length;
+    
+    document.getElementById('totalInvoices').textContent = totalInvoices;
+    document.getElementById('pendingAmount').textContent = `£${pendingAmount.toFixed(2)}`;
+    document.getElementById('paidAmount').textContent = `£${(invoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)).toFixed(2)}`;
+    document.getElementById('overdueCount').textContent = overdueCount;
+}
+
+function renderInvoices() {
+    const invoiceList = document.getElementById('invoiceList');
+    
+    const filteredInvoices = currentFilter === 'all' 
+        ? invoices 
+        : invoices.filter(inv => inv.status === currentFilter);
+    
+    if (filteredInvoices.length === 0) {
+        invoiceList.innerHTML = '<div class="no-invoices">No invoices found</div>';
+        return;
+    }
+    
+    invoiceList.innerHTML = filteredInvoices.map(invoice => {
+        const isOverdue = invoice.is_overdue || (invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid');
+        const displayStatus = isOverdue && invoice.status === 'pending' ? 'overdue' : invoice.status;
+        
+        return `
+        <div class="invoice-card">
+            <div class="invoice-card-header">
+                <span class="invoice-number">${invoice.invoice_number}</span>
+                <span class="invoice-status ${displayStatus}">${displayStatus}</span>
+            </div>
+            <div class="invoice-details">
+                <div class="invoice-detail">
+                    <label>Project</label>
+                    <span>${invoice.project_title || 'N/A'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Type</label>
+                    <span>${invoice.invoice_type || 'N/A'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Client</label>
+                    <span>${invoice.client_name || 'Unknown'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Client Email</label>
+                    <span>${invoice.client_email || 'N/A'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Due Date</label>
+                    <span class="${isOverdue ? 'text-red-400' : ''}">${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Created</label>
+                    <span>${invoice.created_at ? new Date(invoice.created_at).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Project Price</label>
+                    <span>£${(invoice.project_price || 0).toFixed(2)}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Amount Paid</label>
+                    <span class="text-green-400">£${(invoice.amount_paid || 0).toFixed(2)}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Balance</label>
+                    <span class="${invoice.balance > 0 ? 'text-red-400' : 'text-green-400'}">£${(invoice.balance || 0).toFixed(2)}</span>
+                </div>
+                <div class="invoice-detail">
+                    <label>Invoice Amount</label>
+                    <span class="invoice-amount">£${invoice.amount.toFixed(2)}</span>
+                </div>
+                ${invoice.paid_at ? `
+                <div class="invoice-detail">
+                    <label>Paid On</label>
+                    <span class="text-green-400">${new Date(invoice.paid_at).toLocaleDateString()}</span>
+                </div>
+                ` : ''}
+            </div>
+            <div class="invoice-actions">
+                <button class="action-btn pdf-btn" onclick="previewPDF(${invoice.id})">
+                    <i class="fa-solid fa-eye"></i> Preview PDF
+                </button>
+                <button class="action-btn pdf-btn" onclick="downloadPDF(${invoice.id})">
+                    <i class="fa-solid fa-download"></i> Download PDF
+                </button>
+                <button class="action-btn email-btn" onclick="resendInvoiceEmail(${invoice.id})">
+                    <i class="fa-solid fa-envelope"></i> Resend Email
+                </button>
+                ${invoice.status === 'pending' ? `
+                    <button class="action-btn pay-btn" onclick="markAsPaid(${invoice.id})">
+                        <i class="fa-solid fa-check"></i> Mark Paid
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `}).join('');
+}
+
+function showGenerateModal() {
+    console.log('Opening generate modal');
+    const modal = document.getElementById('generateModal');
+    if (modal) {
+        modal.style.display = 'block';
+        showWaring('Modal display set to block');
+        loadProjects();
+    } else {
+        console.error('Modal element not found');
+    }
+}
+
+function closeGenerateModal() {
+    document.getElementById('generateModal').style.display = 'none';
+}
+
+async function generateInvoice() {
+    const projectId = document.getElementById('projectSelect').value;
+    const invoiceType = document.getElementById('invoiceType').value;
+    const customAmount = document.getElementById('customAmount').value;
+    const dueDays = document.getElementById('dueDays').value;
+    const paymentTerms = document.getElementById('paymentTerms').value;
+    const paymentMethods = document.getElementById('paymentMethods').value;
+    const lateFee = document.getElementById('lateFee').value;
+    const earlyDiscount = document.getElementById('earlyDiscount').value;
+    const notes = document.getElementById('invoiceNotes').value;
+    
+    if (!projectId) {
+        showWarning('warning', 'Please select a project');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/invoices/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                project_id: parseInt(projectId),
+                invoice_type: invoiceType,
+                custom_amount: customAmount ? parseFloat(customAmount) : null,
+                due_days: parseInt(dueDays),
+                payment_terms: paymentTerms,
+                payment_methods: paymentMethods,
+                late_fee: lateFee,
+                early_discount: earlyDiscount,
+                notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showWarning('success', `Invoice ${data.invoice_number} generated and email sent successfully!`);
+            closeGenerateModal();
+            loadInvoices();
+        } else {
+            showWarning('error', data.error || 'Failed to generate invoice');
+        }
+    } catch (error) {
+        console.error('Error generating invoice:', error);
+        showWarning('error', 'Error generating invoice');
+    }
+}
+
+async function resendInvoiceEmail(invoiceId) {
+    showConfirm('confirm', 'Are you sure you want to resend this invoice email?', async () => {
+        try {
+            const response = await fetch(`/api/invoices/${invoiceId}/resend`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showWarning('success', 'Invoice email resent successfully!');
+            } else {
+                showWarning('error', data.error || 'Failed to resend email');
+            }
+        } catch (error) {
+            console.error('Error resending email:', error);
+            showWarning('error', 'Error resending email');
+        }
+    });
+}
+
+async function markAsPaid(invoiceId) {
+    showConfirm('confirm', 'Are you sure you want to mark this invoice as paid?', async () => {
+        try {
+            const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showWarning('success', 'Invoice marked as paid successfully!');
+                loadInvoices();
+            } else {
+                showWarning('error', data.error || 'Failed to mark as paid');
+            }
+        } catch (error) {
+            console.error('Error marking as paid:', error);
+            showWarning('error', 'Error marking as paid');
+        }
+    });
+}
+
+function downloadPDF(invoiceId) {
+    window.open(`/api/invoices/${invoiceId}/pdf`, '_blank');
+}
+
+function previewPDF(invoiceId) {
+    const modal = document.getElementById('pdfPreviewModal');
+    const iframe = document.getElementById('pdfPreviewFrame');
+    const downloadBtn = document.getElementById('downloadFromPreviewBtn');
+    
+    if (modal && iframe) {
+        modal.style.display = 'block';
+        iframe.src = `/api/invoices/${invoiceId}/pdf`;
+        
+        downloadBtn.onclick = () => {
+            downloadPDF(invoiceId);
+        };
+    }
+}
+
+function closePDFPreviewModal() {
+    const modal = document.getElementById('pdfPreviewModal');
+    const iframe = document.getElementById('pdfPreviewFrame');
+    
+    if (modal) {
+        modal.style.display = 'none';
+        if (iframe) {
+            iframe.src = '';
+        }
+    }
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderInvoices();
+    });
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('generateModal');
+    if (event.target == modal) {
+        closeGenerateModal();
+    }
+}
+
+function showWarning(type, message) {
+    const modal = document.getElementById('warningModal');
+    const titleEl = document.getElementById('warningTitle');
+    const messageEl = document.getElementById('warningMessage');
+    
+    const icons = {
+        success: '<i class="fa-solid fa-circle-check"></i> Success',
+        error: '<i class="fa-solid fa-circle-xmark"></i> Error',
+        warning: '<i class="fa-solid fa-triangle-exclamation"></i> Warning',
+        info: '<i class="fa-solid fa-circle-info"></i> Info'
+    };
+    
+    if (modal && titleEl && messageEl) {
+        titleEl.innerHTML = icons[type] || icons.info;
+        messageEl.textContent = message;
+        modal.style.display = 'block';
+    }
+}
+
+function closeWarningModal() {
+    const modal = document.getElementById('warningModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function showConfirm(type, message, onConfirm) {
+    const modal = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmTitle');
+    const messageEl = document.getElementById('confirmMessage');
+    const yesBtn = document.getElementById('confirmYesBtn');
+    
+    const icons = {
+        confirm: '<i class="fa-solid fa-circle-question"></i> Confirm',
+        delete: '<i class="fa-solid fa-trash"></i> Delete',
+        warning: '<i class="fa-solid fa-triangle-exclamation"></i> Warning'
+    };
+    
+    if (modal && titleEl && messageEl && yesBtn) {
+        titleEl.innerHTML = icons[type] || icons.confirm;
+        messageEl.textContent = message;
+        modal.style.display = 'block';
+        
+        yesBtn.onclick = function() {
+            closeConfirmModal();
+            if (onConfirm) onConfirm();
+        };
+    }
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Load invoices on page load
+loadInvoices();
+</script>
+{% endblock %}

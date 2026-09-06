@@ -1,0 +1,771 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+<!-- Import Modern Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+<div class="welcome-portal">
+    <!-- Professional Grid Background & Subtle Glows -->
+    <div class="portal-bg-grid"></div>
+    <div class="portal-glow top-left"></div>
+    <div class="portal-glow bottom-right"></div>
+
+    <div class="container relative-z">
+        <!-- Hero Section -->
+        <header class="hero-section">
+            <div class="hero-badge animate-slide-down">
+                <i class="fa-solid fa-handshake-angle"></i> Your Partnership Portal
+            </div>
+            <h1 class="hero-title animate-fade-in-up delay-1">
+                Welcome aboard, <span class="text-gradient">{{ session.get('user', 'Valued Client') }}</span>
+            </h1>
+            <p class="hero-subtitle animate-fade-in-up delay-2">
+                We're excited to start building with you. This dedicated space is designed to give you complete transparency, seamless communication, and effortless control over your projects.
+            </p>
+            
+            <div class="hero-actions animate-fade-in-up delay-3">
+                <button onclick="startPlatformTour()" class="btn btn-primary">
+                    <i class="fa-solid fa-play"></i> Quick Start Guide
+                </button>
+                <a href="#feature-guide" class="btn btn-outline">
+                    Explore Capabilities <i class="fa-solid fa-arrow-down"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Interactive Feature Guide -->
+        <section id="feature-guide" class="interactive-guide animate-fade-in-up delay-4">
+            <div class="guide-header">
+                <h2>Platform Capabilities</h2>
+                <p>Everything you need to manage your software lifecycle in one place.</p>
+            </div>
+            
+            <div class="guide-layout">
+                <!-- Left: Navigation Tabs (Accessible) -->
+                <div class="guide-tabs" role="tablist" aria-orientation="vertical">
+                    <button class="guide-tab active" id="tab-0" role="tab" aria-selected="true" aria-controls="panel-0" onclick="activateGuide(0)">
+                        <div class="tab-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                        <div class="tab-text">
+                            <h3>Project Dashboard</h3>
+                            <span>Track your progress</span>
+                        </div>
+                    </button>
+                    <button class="guide-tab" id="tab-1" role="tab" aria-selected="false" aria-controls="panel-1" onclick="activateGuide(1)">
+                        <div class="tab-icon"><i class="fa-solid fa-comments"></i></div>
+                        <div class="tab-text">
+                            <h3>Direct Messaging</h3>
+                            <span>Communicate easily</span>
+                        </div>
+                    </button>
+                    <button class="guide-tab" id="tab-2" role="tab" aria-selected="false" aria-controls="panel-2" onclick="activateGuide(2)">
+                        <div class="tab-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="tab-text">
+                            <h3>Secure Billing</h3>
+                            <span>Manage payments</span>
+                        </div>
+                    </button>
+                    <button class="guide-tab" id="tab-3" role="tab" aria-selected="false" aria-controls="panel-3" onclick="activateGuide(3)">
+                        <div class="tab-icon"><i class="fa-solid fa-cart-plus"></i></div>
+                        <div class="tab-text">
+                            <h3>Place Orders</h3>
+                            <span>Start new projects</span>
+                        </div>
+                    </button>
+                    <button class="guide-tab" id="tab-4" role="tab" aria-selected="false" aria-controls="panel-4" onclick="activateGuide(4)">
+                        <div class="tab-icon"><i class="fa-solid fa-folder-tree"></i></div>
+                        <div class="tab-text">
+                            <h3>File Management</h3>
+                            <span>Share assets securely</span>
+                        </div>
+                    </button>
+                    <button class="guide-tab" id="tab-5" role="tab" aria-selected="false" aria-controls="panel-5" onclick="activateGuide(5)">
+                        <div class="tab-icon"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="tab-text">
+                            <h3>Analytics & Reports</h3>
+                            <span>Review performance</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Right: Dynamic Content Display -->
+                <div class="guide-display glass-panel">
+                    <div id="panel-0" role="tabpanel" aria-labelledby="tab-0" class="guide-content active">
+                        <div class="content-visual">
+                            <i class="fa-solid fa-chart-pie display-icon"></i>
+                        </div>
+                        <h3>Your Project Dashboard</h3>
+                        <p><strong>The Overview:</strong> A comprehensive, real-time look at all your active projects, milestones, and deadlines.</p>
+                        <p><strong>How it works:</strong> Click on any project card to drill down into specific tasks. View detailed progress bars, read recent updates from our development team, and monitor upcoming delivery dates. Set up custom notifications to ensure you are always aligned with our progress.</p>
+                        <a href="/client/dashboard" class="btn btn-sm btn-outline mt-3">Go to Dashboard</a>
+                    </div>
+                    
+                    <div id="panel-1" role="tabpanel" aria-labelledby="tab-1" class="guide-content" hidden>
+                        <div class="content-visual">
+                            <i class="fa-solid fa-comments display-icon"></i>
+                        </div>
+                        <h3>Direct Messaging Hub</h3>
+                        <p><strong>The Overview:</strong> Your direct line to our development and design teams. Say goodbye to lost email threads.</p>
+                        <p><strong>How it works:</strong> Use the chat interface to ask questions, provide rapid feedback on deliverables, or share screenshots. All communications are archived and searchable, ensuring context is never lost. You'll receive instant notifications when our team responds.</p>
+                        <a href="/client/dashboard" class="btn btn-sm btn-outline mt-3">Open Messages</a>
+                    </div>
+
+                    <div id="panel-2" role="tabpanel" aria-labelledby="tab-2" class="guide-content" hidden>
+                        <div class="content-visual">
+                            <i class="fa-solid fa-file-invoice-dollar display-icon"></i>
+                        </div>
+                        <h3>Secure Billing & Invoices</h3>
+                        <p><strong>The Overview:</strong> A transparent financial hub integrated with reliable payment gateways like PayPal and Stripe.</p>
+                        <p><strong>How it works:</strong> Review outstanding invoices, track historical payments, and approve new project quotes seamlessly. Process payments securely with a single click and automatically generate PDF receipts for your accounting department.</p>
+                        <a href="/client_billing" class="btn btn-sm btn-outline mt-3">Manage Billing</a>
+                    </div>
+
+                    <div id="panel-3" role="tabpanel" aria-labelledby="tab-3" class="guide-content" hidden>
+                        <div class="content-visual">
+                            <i class="fa-solid fa-cart-plus display-icon"></i>
+                        </div>
+                        <h3>Request New Services</h3>
+                        <p><strong>The Overview:</strong> A streamlined process to kick off new software initiatives with our team.</p>
+                        <p><strong>How it works:</strong> Browse our service catalog and submit your requirements through a guided form. We review your request and provide a detailed technical proposal and transparent quote within 24 hours. Track the status from request to active development.</p>
+                        <a href="/services" class="btn btn-sm btn-outline mt-3">View Services</a>
+                    </div>
+
+                    <div id="panel-4" role="tabpanel" aria-labelledby="tab-4" class="guide-content" hidden>
+                        <div class="content-visual">
+                            <i class="fa-solid fa-folder-tree display-icon"></i>
+                        </div>
+                        <h3>Centralized Assets</h3>
+                        <p><strong>The Overview:</strong> A secure, version-controlled vault for all your brand assets, documents, and deliverables.</p>
+                        <p><strong>How it works:</strong> Upload brand guidelines, mockups, or copy docs securely. We sync final deliverables directly to your folders. Enjoy organized folder structures, granular permissions, and automatic backups so your intellectual property is always protected.</p>
+                        <a href="/client/dashboard" class="btn btn-sm btn-outline mt-3">Access Files</a>
+                    </div>
+
+                    <div id="panel-5" role="tabpanel" aria-labelledby="tab-5" class="guide-content" hidden>
+                        <div class="content-visual">
+                            <i class="fa-solid fa-chart-line display-icon"></i>
+                        </div>
+                        <h3>Insights & Analytics</h3>
+                        <p><strong>The Overview:</strong> Data-driven insights to measure the ROI and velocity of your ongoing projects.</p>
+                        <p><strong>How it works:</strong> Access high-level reports on timeline adherence, budget utilization, and task completion rates. Export these metrics as professional PDFs for internal stakeholder meetings to keep your team informed.</p>
+                        <a href="/client/dashboard" class="btn btn-sm btn-outline mt-3">View Reports</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+/* Base Variables & Setup - Professional & Reliable Theme */
+:root {
+    --bg-dark: #090e17;
+    --bg-panel: #111827;
+    --primary: #0ea5e9; /* Trustworthy Blue */
+    --primary-hover: #0284c7;
+    --secondary: #38bdf8;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #1e293b;
+    --glass-bg: rgba(17, 24, 39, 0.7);
+    --glass-border: rgba(30, 41, 59, 0.8);
+    --success: #10b981;
+}
+
+body {
+    background-color: var(--bg-dark);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    color: var(--text-main);
+    overflow-x: hidden;
+}
+
+.welcome-portal {
+    position: relative;
+    min-height: 100vh;
+    padding: 80px 20px;
+    overflow: hidden;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.relative-z {
+    position: relative;
+    z-index: 10;
+}
+
+/* Authentic & Stable Background */
+.portal-bg-grid {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.portal-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.portal-glow.top-left {
+    top: -20%; left: -10%;
+    background: var(--primary);
+}
+
+.portal-glow.bottom-right {
+    bottom: -20%; right: -10%;
+    background: var(--secondary);
+}
+
+/* Typography & Hero */
+.hero-section {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 80px auto;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--secondary);
+    margin-bottom: 24px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.hero-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+/* Professional Buttons */
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--text-muted);
+}
+
+.btn-sm {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+}
+.mt-3 { margin-top: 24px; }
+
+/* Interactive Guide Section */
+.interactive-guide {
+    margin-top: 40px;
+}
+
+.guide-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.guide-header h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.guide-header p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+.guide-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.guide-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.guide-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.guide-tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: var(--border-color);
+}
+
+.guide-tab.active {
+    background: var(--bg-panel);
+    border-color: var(--border-color);
+    color: var(--text-main);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tab-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    transition: 0.2s;
+    border: 1px solid var(--border-color);
+}
+
+.guide-tab.active .tab-icon {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--primary);
+    border-color: rgba(14, 165, 233, 0.2);
+}
+
+.tab-text h3 {
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
+    color: inherit;
+    font-weight: 600;
+}
+
+.tab-text span {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.guide-display {
+    position: relative;
+    overflow: hidden;
+}
+
+.guide-content {
+    display: none;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.guide-content.active {
+    display: block;
+}
+
+.content-visual {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    border: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+.display-icon {
+    font-size: 2rem;
+    color: var(--primary);
+}
+
+.guide-content h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.guide-content p {
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+}
+
+.guide-content strong {
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+/* Utilities & Animations */
+.animate-slide-down { animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+.animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Reliable On-Page Tour Modal */
+.tour-overlay {
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(9, 14, 23, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.tour-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tour-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 550px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tour-overlay.active .tour-card {
+    transform: scale(1);
+}
+
+.tour-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.tour-progress-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.tour-close {
+    background: none; border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.tour-close:hover { color: var(--text-main); }
+
+.tour-icon-wrap {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.tour-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.tour-desc {
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    font-size: 1rem;
+}
+
+.tour-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 24px;
+}
+
+.tour-dots {
+    display: flex; gap: 8px;
+}
+
+.tour-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: 0.3s;
+}
+.tour-dot.active {
+    background: var(--primary);
+    transform: scale(1.2);
+}
+
+.tour-nav-btns {
+    display: flex; gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .guide-layout { grid-template-columns: 1fr; }
+    .hero-title { font-size: 2.8rem; }
+    .guide-tabs { flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
+    .guide-tab { flex: 0 0 auto; white-space: nowrap; }
+    .hero-actions { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+}
+</style>
+
+<script>
+// --- Accessible On-Page Guide Logic ---
+function activateGuide(index) {
+    // Update tabs (Accessibility compliant)
+    const tabs = document.querySelectorAll('.guide-tab');
+    tabs.forEach((tab, i) => {
+        if (i === index) {
+            tab.classList.add('active');
+            tab.setAttribute('aria-selected', 'true');
+        } else {
+            tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
+        }
+    });
+
+    // Update content panels
+    const panels = document.querySelectorAll('.guide-content');
+    panels.forEach((panel, i) => {
+        if (i === index) {
+            panel.classList.add('active');
+            panel.removeAttribute('hidden');
+        } else {
+            panel.classList.remove('active');
+            panel.setAttribute('hidden', '');
+        }
+    });
+}
+
+// --- Robust On-Page Platform Walkthrough ---
+// Replaces the fragile cross-page DOM injection with a stable, reliable on-page carousel modal.
+const tourSteps = [
+    {
+        icon: 'fa-table-columns',
+        title: 'Centralized Dashboard',
+        description: 'Your command center. From here, you can monitor project health, review upcoming milestones, and ensure our timelines perfectly align with your business goals.'
+    },
+    {
+        icon: 'fa-comments',
+        title: 'Seamless Communication',
+        description: 'Skip the scattered emails. Chat directly with the developers and designers working on your project. Feedback is instant, and history is safely archived.'
+    },
+    {
+        icon: 'fa-file-invoice-dollar',
+        title: 'Transparent Billing',
+        description: 'No hidden fees. Review detailed quotes, track project budgets in real-time, and securely process payments using industry-standard encryption.'
+    },
+    {
+        icon: 'fa-rocket',
+        title: 'Ready to Launch',
+        description: 'You now have full control over your software journey. Let\'s head over to your dashboard to see your current projects and start collaborating.'
+    }
+];
+
+let currentTourStep = 0;
+
+function startPlatformTour() {
+    currentTourStep = 0;
+    renderTourState();
+    document.getElementById('platform-tour-modal').classList.add('active');
+}
+
+function closePlatformTour() {
+    document.getElementById('platform-tour-modal').classList.remove('active');
+}
+
+function nextTourStep() {
+    if (currentTourStep < tourSteps.length - 1) {
+        currentTourStep++;
+        renderTourState();
+    } else {
+        // Finish tour - reliably navigate to dashboard
+        window.location.href = '/client/dashboard';
+    }
+}
+
+function prevTourStep() {
+    if (currentTourStep > 0) {
+        currentTourStep--;
+        renderTourState();
+    }
+}
+
+function renderTourState() {
+    const step = tourSteps[currentTourStep];
+    
+    // Update Content
+    document.getElementById('tour-step-counter').innerText = `Step ${currentTourStep + 1} of ${tourSteps.length}`;
+    document.getElementById('tour-icon').className = `fa-solid ${step.icon}`;
+    document.getElementById('tour-title').innerText = step.title;
+    document.getElementById('tour-desc').innerText = step.description;
+
+    // Update Dots
+    const dotsContainer = document.getElementById('tour-dots');
+    dotsContainer.innerHTML = '';
+    for(let i = 0; i < tourSteps.length; i++) {
+        dotsContainer.innerHTML += `<div class="tour-dot ${i === currentTourStep ? 'active' : ''}"></div>`;
+    }
+
+    // Update Buttons
+    const prevBtn = document.getElementById('tour-prev-btn');
+    const nextBtn = document.getElementById('tour-next-btn');
+
+    if (currentTourStep === 0) {
+        prevBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'inline-flex';
+    }
+
+    if (currentTourStep === tourSteps.length - 1) {
+        nextBtn.innerHTML = `Go to Dashboard <i class="fa-solid fa-arrow-right"></i>`;
+        nextBtn.classList.add('btn-primary');
+        nextBtn.classList.remove('btn-outline');
+    } else {
+        nextBtn.innerHTML = `Next <i class="fa-solid fa-arrow-right"></i>`;
+        nextBtn.classList.remove('btn-primary');
+        nextBtn.classList.add('btn-outline');
+    }
+}
+</script>
+
+<!-- Virtual Tour Modal UI (Reliably embedded in page) -->
+<div id="platform-tour-modal" class="tour-overlay" aria-modal="true" role="dialog">
+    <div class="tour-card">
+        <div class="tour-header">
+            <span class="tour-progress-text" id="tour-step-counter">Step 1 of 4</span>
+            <button class="tour-close" onclick="closePlatformTour()" aria-label="Close tour">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <div class="tour-icon-wrap">
+            <i id="tour-icon" class="fa-solid fa-table-columns"></i>
+        </div>
+        
+        <h3 class="tour-title" id="tour-title">Centralized Dashboard</h3>
+        <p class="tour-desc" id="tour-desc">Description goes here.</p>
+        
+        <div class="tour-footer">
+            <div class="tour-dots" id="tour-dots">
+                <!-- Injected via JS -->
+            </div>
+            <div class="tour-nav-btns">
+                <button id="tour-prev-btn" onclick="prevTourStep()" class="btn btn-outline btn-sm">
+                    Back
+                </button>
+                <button id="tour-next-btn" onclick="nextTourStep()" class="btn btn-outline btn-sm">
+                    Next <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

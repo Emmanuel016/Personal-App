@@ -1,0 +1,1016 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container animate-fadeIn">
+    <!-- Top Quick Access Navigation & Portal Header -->
+    <div class="quick-nav-header flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 mb-8 border-b border-white/10">
+        <div>
+            <h1 class="glow-text text-3xl font-bold tracking-wider text-white">NOTIFICATIONS</h1>
+            <p class="text-cyan-400 text-sm">Stay updated with your latest account activities and portal alerts.</p>
+        </div>
+    </div>
+
+    <!-- On-Page Status Warnings / Custom Banner Alerts 
+    <div id="systemWarningBanner" class="system-warning-banner hidden mb-6 animate-fadeIn">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg"></i>
+            <span id="systemWarningText" class="text-xs text-slate-300 font-medium">System Alert message placeholder</span>
+        </div>
+        <button onclick="dismissSystemBanner()" class="text-slate-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+    </div> -->
+
+    <!-- Filters Section & Global Actions -->
+    <div class="filters-actions-bar mb-6">
+        <div class="filters-section">
+            <div class="filter-group">
+                <label>Filter by Type:</label>
+                <select id="typeFilter" onchange="filterNotifications()">
+                    <option value="all">All Notifications</option>
+                    <option value="message">Messages</option>
+                    <option value="project_status">Project Status</option>
+                    <option value="payment">Payments</option>
+                    <option value="registration">Registrations</option>
+                    <option value="file_upload">File Uploads</option>
+                    <option value="deadline_reminder">Deadline Reminders</option>
+                    <option value="system_alert">System Alerts</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Status:</label>
+                <select id="statusFilter" onchange="filterNotifications()">
+                    <option value="all">All</option>
+                    <option value="unread">Unread Only</option>
+                    <option value="read">Read Only</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="header-actions">
+            <button onclick="triggerMarkAllAsReadConfirm()" class="action-btn">
+                <i class="fa-solid fa-check-double"></i> Mark All as Read
+            </button>
+            <button onclick="triggerDeleteReadConfirm()" class="action-btn danger">
+                <i class="fa-solid fa-trash"></i> Clear Read
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Stats Dashboard -->
+    <div class="stats-grid mb-6">
+        <div class="card stat-card">
+            <i class="fa-solid fa-bell"></i>
+            <div>
+                <div class="stat-value" id="totalNotifications">0</div>
+                <div class="stat-label">Total Logs</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-envelope"></i>
+            <div>
+                <div class="stat-value text-cyan-400" id="unreadNotifications">0</div>
+                <div class="stat-label">Unread Alert</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-envelope-open"></i>
+            <div>
+                <div class="stat-value text-emerald-400" id="readNotifications">0</div>
+                <div class="stat-label">Read History</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Main Container -->
+    <div class="card glass-panel">
+        <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700; color: #fff;">
+                <i class="fa-solid fa-list text-cyan-400 mr-2"></i> NOTIFICATION HISTORY
+            </h3>
+            <span class="text-xs text-slate-500 font-mono">Synchronization Secured</span>
+        </div>
+        
+        <div id="notificationsList" style="padding: 20px;">
+            <div class="loading-spinner">
+                <i class="fa-solid fa-spinner fa-spin text-cyan-400 text-lg mr-2"></i> Loading notifications...
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination" id="pagination" style="display: none; padding: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+            <button onclick="loadPreviousPage()" id="prevBtn" class="pagination-btn" disabled>
+                <i class="fa-solid fa-chevron-left"></i> Previous
+            </button>
+            <span id="pageInfo" style="color: #8892b0; font-size: 13px; font-family: 'Rajdhani', sans-serif; font-weight: 600;">Page 1 of 1</span>
+            <button onclick="loadNextPage()" id="nextBtn" class="pagination-btn" disabled>
+                Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Safe HTML Custom Warning / Confirmation Modal -->
+<div id="customConfirmModal" class="confirm-modal-overlay hidden" aria-modal="true" role="dialog">
+    <div class="confirm-modal-card">
+        <div class="confirm-modal-icon-wrap" id="confirmModalIconContainer">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 id="confirmModalTitle">Are you sure?</h3>
+        <p id="confirmModalMsg">This action cannot be undone.</p>
+        <div class="confirm-modal-actions">
+            <button id="confirmCancelBtn" onclick="closeConfirmModal()" class="btn-cancel">Cancel</button>
+            <button id="confirmProceedBtn" onclick="executePendingAction()" class="btn-proceed">Proceed</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* On-Page Custom Warnings / Warning banner styling */
+.system-warning-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 10px;
+    padding: 14px 20px;
+    color: #ef4444;
+}
+
+/* Filters & Actions layout */
+.filters-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    border: none;
+    border-radius: 8px;
+    color: #020617;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0, 242, 254, 0.15);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 242, 254, 0.35);
+}
+
+.action-btn.danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.action-btn.danger:hover {
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+}
+
+.filters-section {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    color: #8892b0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.filter-group select {
+    padding: 8px 14px;
+    background: rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #00f2fe;
+}
+
+/* Statistical Cards layout */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 22px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.stat-card i {
+    font-size: 24px;
+    color: #00f2fe;
+    min-width: 40px;
+}
+
+.stat-label {
+    color: #8892b0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    line-height: 1;
+}
+
+/* Notification layout cards */
+.notification-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    border-color: rgba(0, 242, 254, 0.25);
+    transform: translateX(4px);
+}
+
+.notification-item.unread {
+    border-left: 3px solid #00f2fe;
+    background: rgba(0, 242, 254, 0.03);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.notification-type {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.notification-type.message {
+    background: rgba(0, 242, 254, 0.1);
+    color: #00f2fe;
+    border: 1px solid rgba(0, 242, 254, 0.15);
+}
+
+.notification-type.project_status {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.notification-type.payment {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.notification-type.registration {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.notification-type.file_upload {
+    background: rgba(236, 72, 153, 0.1);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.15);
+}
+
+.notification-type.deadline_reminder {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.notification-type.system_alert {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.notification-title {
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.notification-message {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+
+.notification-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.notification-time {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.notification-action-btn {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.notification-action-btn:hover {
+    background: rgba(0, 242, 254, 0.08);
+    border-color: rgba(0, 242, 254, 0.3);
+    color: #00f2fe;
+}
+
+.notification-action-btn.delete {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+.notification-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ffffff;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: #94a3b8;
+}
+
+.empty-state i {
+    font-size: 36px;
+    margin-bottom: 16px;
+    color: #475569;
+}
+
+/* Pagination Control system styling */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: rgba(0, 242, 254, 0.05);
+    border-color: rgba(0, 242, 254, 0.3);
+    color: #00f2fe;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: rgba(255, 255, 255, 0.05);
+    color: #64748b;
+}
+
+/* Custom Warning Confirmation Modal styling (Safe, elegant, blur) */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(9, 14, 23, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.2s ease;
+}
+
+.confirm-modal-overlay.hidden {
+    display: none !important;
+}
+
+.confirm-modal-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    animation: zoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-modal-icon-wrap {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+}
+
+.confirm-modal-icon-wrap.danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.confirm-modal-card h3 {
+    color: #ffffff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.confirm-modal-card p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 28px;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-cancel {
+    padding: 10px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background: rgba(255,255,255,0.03);
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.2);
+}
+
+.btn-proceed {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    background: #0ea5e9;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.btn-proceed:hover {
+    background: #0284c7;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
+}
+
+.btn-proceed.danger {
+    background: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.btn-proceed.danger:hover {
+    background: #dc2626;
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 768px) {
+    .filters-actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filters-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-group select {
+        width: 100%;
+    }
+    .header-actions {
+        flex-direction: column;
+    }
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .notification-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .notification-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+</style>
+
+<script>
+let currentPage = 1;
+let perPage = 10;
+let totalPages = 1;
+let currentNotifications = [];
+let pendingAction = null;
+
+// Initializer
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin notifications page loaded');
+    // Check if user is authenticated
+    fetch('/api/loggedin')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Login status check:', data);
+            if (data.status === 'notloggedin') {
+                console.error('User is not logged in');
+                document.getElementById('notificationsList').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-lock text-red-400"></i>
+                        <p>You must be logged in to view notifications.</p>
+                        <a href="/login" style="color: #00f2fe; text-decoration: underline;">Login to continue</a>
+                    </div>
+                `;
+                return;
+            }
+            // Proceed with loading notifications
+            loadNotifications();
+            updateStats();
+        })
+        .catch(error => {
+            console.error('Error checking login status:', error);
+            // Try loading anyway in case the check endpoint is the issue
+            loadNotifications();
+            updateStats();
+        });
+});
+
+function loadNotifications() {
+    const typeFilter = document.getElementById('typeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+
+    console.log('Loading notifications with filters:', { typeFilter, statusFilter, currentPage, perPage });
+
+    fetch(`/api/admin/notifications?page=${currentPage}&per_page=${perPage}&type=${typeFilter}&status=${statusFilter}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Notifications data received:', data);
+            console.log('Notifications array:', data.notifications);
+            console.log('Total pages:', data.pages);
+            
+            if (data.error) {
+                console.error('API returned error:', data.error);
+                throw new Error(data.error);
+            }
+            
+            if (!data.notifications) {
+                console.error('No notifications array in data');
+                throw new Error('No notifications array in response');
+            }
+            
+            if (!Array.isArray(data.notifications)) {
+                console.error('Notifications is not an array:', typeof data.notifications);
+                throw new Error('Invalid notifications data format');
+            }
+            
+            console.log('Data validation passed, proceeding to render');
+            currentNotifications = data.notifications;
+            totalPages = data.pages;
+            console.log('Calling renderNotifications with', data.notifications.length, 'items');
+            renderNotifications(data.notifications);
+            console.log('Calling updatePagination');
+            updatePagination(data);
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            document.getElementById('notificationsList').innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>Failed to retrieve system alerts logs: ${error.message}</p>
+                    <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Make sure you are logged in as an admin user.</p>
+                </div>
+            `;
+        });
+}
+
+function renderNotifications(notifications) {
+    try {
+        const container = document.getElementById('notificationsList');
+        
+        console.log('renderNotifications called with:', notifications);
+        console.log('Container element:', container);
+        
+        if (!container) {
+            console.error('Container element not found!');
+            return;
+        }
+        
+        if (!notifications || notifications.length === 0) {
+            console.log('No notifications to render, showing empty state');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-bell-slash text-slate-500"></i>
+                    <p>No new notification logs found.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        console.log('Rendering', notifications.length, 'notifications');
+        
+        container.innerHTML = notifications.map(notification => {
+            console.log('Processing notification:', notification);
+            return `
+            <div class="notification-item ${notification.read ? '' : 'unread'}" onclick="viewNotification(${notification.id})">
+                <div class="notification-header">
+                    <span class="notification-type ${notification.type}">${formatType(notification.type)}</span>
+                    <div class="notification-actions">
+                        <button class="notification-action-btn" onclick="event.stopPropagation(); markAsRead(${notification.id})">
+                            <i class="fa-solid fa-check"></i> Mark Read
+                        </button>
+                        <button class="notification-action-btn delete" onclick="event.stopPropagation(); triggerDeleteNotificationConfirm(${notification.id})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="notification-title">${escapeHtml(notification.title)}</div>
+                <div class="notification-message">${escapeHtml(notification.message)}</div>
+                <div class="notification-footer">
+                    <span class="notification-time">${formatTime(notification.created_at)}</span>
+                    <span style="color: #64748b; font-size: 10px; margin-left: 8px;">${notification.target_role === 'admin' ? '👤 Admin' : '👤 Client'}</span>
+                    ${notification.read ? '<span style="color: #10b981; font-size: 11px; font-weight:600;"><i class="fa-solid fa-check"></i> Read</span>' : '<span style="color: #00f2fe; font-size: 11px; font-weight:600;"><i class="fa-solid fa-circle"></i> Unread</span>'}
+                </div>
+            </div>
+        `;
+        }).join('');
+        
+        console.log('Render complete, container HTML length:', container.innerHTML.length);
+    } catch (error) {
+        console.error('Error in renderNotifications:', error);
+        const container = document.getElementById('notificationsList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+                    <p>Error rendering notifications: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+}
+
+function updatePagination(data) {
+    const pagination = document.getElementById('pagination');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    
+    if (data.pages <= 1) {
+        pagination.style.display = 'none';
+        return;
+    }
+    
+    pagination.style.display = 'flex';
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === data.pages;
+    pageInfo.textContent = `Page ${currentPage} of ${data.pages}`;
+}
+
+function loadPreviousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadNotifications();
+    }
+}
+
+function loadNextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;
+        loadNotifications();
+    }
+}
+
+function filterNotifications() {
+    currentPage = 1;
+    loadNotifications();
+}
+
+function updateStats() {
+    fetch('/api/admin/notifications/stats')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            document.getElementById('totalNotifications').textContent = data.total;
+            document.getElementById('unreadNotifications').textContent = data.unread;
+            document.getElementById('readNotifications').textContent = data.read;
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+            document.getElementById('totalNotifications').textContent = '0';
+            document.getElementById('unreadNotifications').textContent = '0';
+            document.getElementById('readNotifications').textContent = '0';
+        });
+}
+
+function markAsRead(notificationId) {
+    fetch(`/api/admin/notifications/${notificationId}/read`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadNotifications();
+                updateStats();
+                updateNotificationBadge();
+            }
+        })
+        .catch(error => console.error('Error marking as read:', error));
+}
+
+// Custom Warning Confirmations - Trigger systems
+function triggerMarkAllAsReadConfirm() {
+    showCustomConfirm(
+        'Mark All as Read?', 
+        'Are you sure you want to mark all alert logs as read? This will update your unread count badge.', 
+        function() {
+            fetch('/api/admin/notifications/mark-all-read', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadNotifications();
+                        updateStats();
+                        updateNotificationBadge();
+                    }
+                })
+                .catch(error => console.error('Error marking all as read:', error));
+        },
+        false // Not danger
+    );
+}
+
+function triggerDeleteNotificationConfirm(notificationId) {
+    showCustomConfirm(
+        'Delete Notification Alert?', 
+        'Are you sure you want to delete this specific statement notification? This action is permanent.', 
+        function() {
+            fetch(`/api/admin/notifications/${notificationId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadNotifications();
+                        updateStats();
+                        updateNotificationBadge();
+                    }
+                })
+                .catch(error => console.error('Error deleting notification:', error));
+        },
+        true // Danger indicator
+    );
+}
+
+function triggerDeleteReadConfirm() {
+    showCustomConfirm(
+        'Clear All Read Alerts?', 
+        'Are you sure you want to clear all your marked read history? You will lose history logs permanently.', 
+        function() {
+            fetch('/api/admin/notifications/delete-read', { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadNotifications();
+                        updateStats();
+                        updateNotificationBadge();
+                    }
+                })
+                .catch(error => console.error('Error deleting read notifications:', error));
+        },
+        true // Danger indicator
+    );
+}
+
+// Custom Warning Confirmation Modal Engine Handlers
+function showCustomConfirm(title, message, proceedCallback, isDanger = false) {
+    document.getElementById('confirmModalTitle').textContent = title;
+    document.getElementById('confirmModalMsg').textContent = message;
+    
+    const iconContainer = document.getElementById('confirmModalIconContainer');
+    const proceedBtn = document.getElementById('confirmProceedBtn');
+    
+    if (isDanger) {
+        iconContainer.className = "confirm-modal-icon-wrap danger";
+        iconContainer.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+        proceedBtn.className = "btn-proceed danger";
+    } else {
+        iconContainer.className = "confirm-modal-icon-wrap";
+        iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        proceedBtn.className = "btn-proceed";
+    }
+    
+    pendingAction = proceedCallback;
+    document.getElementById('customConfirmModal').classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    document.getElementById('customConfirmModal').classList.add('hidden');
+    pendingAction = null;
+}
+
+function executePendingAction() {
+    if (typeof pendingAction === 'function') {
+        pendingAction();
+    }
+    closeConfirmModal();
+}
+
+// Dynamic html Warning banner alert dispatch system
+function triggerOnPageSystemWarning(message) {
+    const banner = document.getElementById('systemWarningBanner');
+    const textSpan = document.getElementById('systemWarningText');
+    if (banner && textSpan) {
+        textSpan.textContent = message;
+        banner.classList.remove('hidden');
+    }
+}
+
+function dismissSystemBanner() {
+    const banner = document.getElementById('systemWarningBanner');
+    if (banner) {
+        banner.classList.add('hidden');
+    }
+}
+
+function viewNotification(notificationId) {
+    markAsRead(notificationId);
+}
+
+function formatType(type) {
+    const types = {
+        'message': 'Message',
+        'project_status': 'Project',
+        'payment': 'Payment',
+        'registration': 'Registration',
+        'file_upload': 'File Upload',
+        'deadline_reminder': 'Deadline',
+        'system_alert': 'System Alert'
+    };
+    return types[type] || type;
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    
+    return date.toLocaleDateString();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function updateNotificationBadge() {
+    // Update the admin notification badge
+    fetch('/api/admin/notifications/stats')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                if (data.unread > 0) {
+                    badge.textContent = data.unread;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating notification badge:', error);
+        });
+}
+</script>
+{% endblock %}

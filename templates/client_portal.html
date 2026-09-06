@@ -1,0 +1,1216 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+<div class="container animate-fadeIn">
+    <!-- Header Section -->
+    <div class="portal-header">
+        <div>
+            <h1 class="glow-text">YOUR PERSONAL DASHBOARD</h1>
+            <p class="text-cyan-400">Welcome back, <span id="clientName">{{ session.get('user', 'Client') }}</span>. Happy to see you.</p>
+            <p class="text-cyan-400">Let's continue from where we left off. We are here to help you turn your software ideas into reality!</p>
+            <p class="text-cyan-600">Want a quick tour of the website?</p>
+            <a href="/client/register" class="tour-link"><i class="fa-solid fa-circle-info mr-1"></i>Click here!</a>
+        </div>
+        <div class="status-badge">
+            <div class="pulse-dot"></div>
+            SECURED CONNECTION
+        </div>
+    </div>
+    
+    <!-- Quick Stats Grid -->
+    <div class="stats-grid mb-6">
+        <div class="card stat-card">
+            <i class="fa-solid fa-diagram-project"></i>
+            <div class="stat-value" id="activeProjects">0</div>
+            <div class="stat-label">Active Projects</div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-credit-card"></i>
+            <div class="stat-value" id="totalPaid">£0.00</div>
+            <div class="stat-label">Total Investment</div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <div class="stat-value" id="pendingInvoices">0</div>
+            <div class="stat-label">Pending Invoices</div>
+        </div>
+        <div class="card stat-card">
+            <i class="fa-solid fa-chart-pie"></i>
+            <div class="stat-value" id="completedProjects">0</div>
+            <div class="stat-label">Completed Projects</div>
+        </div>
+    </div>
+
+    <!-- Analysis Dashboard Section -->
+    <div class="mb-6">
+        <div class="card glass-panel">
+            <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                    <i class="fa-solid fa-chart-line"></i> PROJECT ANALYSIS DASHBOARD
+                </h3>
+                <span class="text-[10px] text-cyan-400 animate-pulse font-bold tracking-wider">Live Updates</span>
+            </div>
+            <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <!-- Overall Progress Chart -->
+                <div style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <h4 style="color: #00f2fe; font-size: 12px; margin-bottom: 15px; letter-spacing: 1px;">OVERALL STATUS</h4>
+                    <div style="position: relative; width: 140px; height: 140px; margin: 0 auto;">
+                        <canvas id="overallProgressChart"></canvas>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%;">
+                            <div style="font-size: 24px; font-weight: bold; color: white;" id="chartCenterValue">0</div>
+                            <div style="font-size: 9px; color: #8892b0; letter-spacing: 1px;" id="chartCenterLabel">PROJECTS</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Distribution -->
+                <div>
+                    <h4 style="color: #00f2fe; font-size: 12px; margin-bottom: 15px; letter-spacing: 1px;">STATUS DISTRIBUTION</h4>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="status-bar-item">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Completed</span>
+                                <span style="font-size: 11px; color: #10b981; font-weight: bold;" id="completedCount">0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #10b981, #34d399);" id="completedBar"></div>
+                            </div>
+                        </div>
+                        <div class="status-bar-item">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Active</span>
+                                <span style="font-size: 11px; color: #00f2fe; font-weight: bold;" id="activeCount">0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe);" id="activeBar"></div>
+                            </div>
+                        </div>
+                        <div class="status-bar-item">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Pending</span>
+                                <span style="font-size: 11px; color: #f59e0b; font-weight: bold;" id="pendingCount">0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);" id="pendingBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investment Progress -->
+                <div>
+                    <h4 style="color: #00f2fe; font-size: 12px; margin-bottom: 15px; letter-spacing: 1px;">INVESTMENT TRACKING</h4>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Total Project Value</span>
+                                <span style="font-size: 11px; color: white; font-weight: bold;" id="totalProjectValue">£0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 100%; background: rgba(255,255,255,0.1);"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Amount Paid</span>
+                                <span style="font-size: 11px; color: #10b981; font-weight: bold;" id="amountPaidValue">£0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #10b981, #34d399);" id="paymentProgress"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 11px; color: #8892b0;">Remaining Balance</span>
+                                <span style="font-size: 11px; color: #f59e0b; font-weight: bold;" id="remainingBalance">£0</span>
+                            </div>
+                            <div class="progress-container" style="height: 8px;">
+                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);" id="remainingProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secure Dynamic Toast Frame -->
+    <div id="portalNotification" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; padding: 15px 20px; border-radius: 12px; font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 1px; color: white; background: rgba(10, 25, 47, 0.95); border: 1px solid #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); animation: fadeIn 0.3s ease-out;">
+        <span id="portalNotificationText"></span>
+    </div>
+
+    <!-- Main Adaptable Grid for Laptops -->
+    <div class="main-grid">
+        <!-- Project Tracking Section -->
+        <div class="grid-col-8">
+            <div class="card glass-panel" style="display: flex; flex-direction: column; height: 68%; margin-bottom: 24px;">
+                <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                        <i class="fa-solid fa-list-check"></i> PROJECT STATUS
+                    </h3>
+                </div>
+                <div class="project-grid cyber-scroll" id="clientProjectList" style="padding: 20px; overflow-y: auto; max-height: 400px; flex-grow: 1;">
+                    <div class="loading-placeholder">Scanning for linked or pending projects...</div>
+                </div>
+            </div>
+            
+            <!-- Invoice Section -->
+            <div class="card glass-panel" style="display: flex; flex-direction: column; min-height: auto;">
+                <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; font-weight: 700; font-size: 14px;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> YOUR INVOICES
+                    </h3>
+                    <a href="/client_billing" style="color: #00f2fe; font-size: 11px; text-decoration: none; font-weight: 600;">
+                        View All <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="invoice-grid cyber-scroll" id="clientInvoiceList" style="padding: 12px 16px; overflow-y: auto; max-height: 200px;">
+                    <div class="loading-placeholder">Loading invoice records...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Uplink (Flexible Frame Heights for Shorter Laptops) -->
+        <div class="grid-col-4">
+            <div class="card glass-panel chat-panel">
+                <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                        <i class="fa-solid fa-comments"></i> MESSAGES
+                    </h3>
+                    <span class="text-[10px] text-cyan-400 animate-pulse font-bold tracking-wider">Direct communication</span>
+                </div>
+                <div class="chat-container cyber-scroll" id="chatBox">
+                    <div class="text-center opacity-50 text-[11px] mt-10">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-cyan-400"></i>
+                        <p>Syncing secure channel history...</p>
+                    </div>
+                </div>
+                
+                <!-- Unified Chat Input & File Preview Wrapper -->
+                <div class="chat-input-wrapper" style="background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column;">
+                    
+                    <!-- File Preview Container -->
+                    <div id="filePreviewContainer" style="display: none; padding: 12px 16px 0 16px; align-items: center;">
+                        <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #00f2fe; width: fit-content; max-width: 90%;">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <span id="previewFilename" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; letter-spacing: 0.5px;"></span>
+                            <button onclick="removeSelectedFile()" title="Remove file" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; margin-left: 10px; transition: 0.2s;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#ef4444'">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-input-area" style="background: transparent; border-top: none; padding-top: 14px;">
+                        <input id="clientFileInput" type="file" style="display: none;">
+                        
+                        <!-- Clean, modern circular plus sign uploader -->
+                        <button onclick="document.getElementById('clientFileInput').click()" 
+                            class="plus-upload-btn"
+                            title="Attach File"
+                            onmouseover="this.style.borderColor='#00f2fe'; this.style.color='#00f2fe'; this.style.background='rgba(0, 242, 254, 0.05)';"
+                            onmouseout="this.style.borderColor='rgba(0, 242, 254, 0.2)'; this.style.color='#8892b0'; this.style.background='rgba(255, 255, 255, 0.03)';">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+
+                        <!-- Text input -->
+                        <input type="text" id="msgInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendClientMsg()">
+
+                        <!-- Send button -->
+                        <button onclick="sendClientMsg()" class="chat-send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+.portal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    border-left: 4px solid #00f2fe;
+    padding-left: 20px;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.tour-link {
+    color: #00f2fe;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+    margin-top: 10px;
+}
+.tour-link:hover {
+    color: white;
+    text-shadow: 0 0 8px #00f2fe;
+}
+
+.glow-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    margin: 0;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+    color: white;
+    text-align: left;
+    display: block;
+}
+
+.status-badge {
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #00f2fe;
+    font-weight: bold;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #00f2fe;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00f2fe;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #00f2fe;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.1);
+}
+
+.stat-card i {
+    font-size: 20px;
+    color: #00f2fe;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Rajdhani', sans-serif;
+    color: white;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #8892b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.glass-panel {
+    background: rgba(10, 25, 47, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.project-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.project-item:hover {
+    border-color: rgba(0, 242, 254, 0.3);
+    background: rgba(0, 242, 254, 0.02);
+}
+
+.progress-container {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    margin-top: 15px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00f2fe, #4facfe);
+    box-shadow: 0 0 10px #00f2fe;
+    transition: width 1s ease-in-out;
+}
+
+/* Highly adaptable layout frame for laptops and taller viewports */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+}
+
+.chat-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: radial-gradient(circle at center, rgba(10,20,40,0) 0%, rgba(0,0,0,0.2) 100%);
+}
+
+.msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 15px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: white;
+    position: relative;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Left-aligned for incoming messages */
+.msg.admin {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Right-aligned for outgoing messages */
+.msg.me {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+    color: #0a192f;
+    font-weight: 600;
+}
+
+.msg-time {
+    display: block;
+    font-size: 9px;
+    opacity: 0.7;
+    margin-top: 6px;
+}
+
+/* Align timestamps correctly per bubble */
+.msg.admin .msg-time {
+    text-align: left;
+    color: #8892b0;
+}
+
+.msg.me .msg-time {
+    text-align: right;
+    color: #0a192f;
+    opacity: 0.8;
+}
+
+/* Consolidated responsive Chat input layout */
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    align-items: center;
+}
+
+.plus-upload-btn {
+    width: 40px; 
+    height: 40px; 
+    background: rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(0, 242, 254, 0.2); 
+    border-radius: 10px; 
+    font-size: 15px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    color: #8892b0; 
+    transition: all 0.2s ease; 
+    flex-shrink: 0;
+}
+
+.chat-input-area input[type="text"] {
+    flex-grow: 1;
+    background: #112240;
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    border-radius: 10px;
+    color: white;
+    padding: 11px 14px;
+    outline: none;
+    font-size: 10px;
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+.chat-input-area input[type="text"]:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+}
+
+.chat-input-area input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Inter', sans-serif;
+}
+
+.chat-input-area input[type="text"]:focus::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-send-btn {
+    background: #00f2fe;
+    color: #0a192f;
+    border: none;
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    transform: scale(1.05);
+    background: white;
+}
+
+.chat-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+}
+
+.grid-col-8 { grid-column: span 8; }
+.grid-col-4 { grid-column: span 4; }
+
+/* Responsive break points (Laptops and Tablets) */
+@media (max-width: 1024px) {
+    .grid-col-8, .grid-col-4 { grid-column: span 12; }
+    
+    .portal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .glow-text {
+        font-size: 1.8rem;
+    }
+    
+    .chat-panel {
+        height: 450px;
+    }
+}
+
+@media (max-width: 480px) {
+    .portal-header {
+        padding-left: 10px;
+    }
+    .status-badge {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+}
+
+/* Scrollbar tweaks for chat */
+.cyber-scroll::-webkit-scrollbar { width: 4px; }
+.cyber-scroll::-webkit-scrollbar-track { background: transparent; }
+.cyber-scroll::-webkit-scrollbar-thumb { background: #233554; border-radius: 10px; }
+.cyber-scroll::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+</style>
+
+<script>
+// ==========================================
+// ADJUSTABLE SMART POLLING VARIABLES
+// ==========================================
+let syncInterval = null;
+const snappyChatDelay = 2000;    // Chat checks (in milliseconds) when the browser tab is active
+const savingModeDelay = 10000;  // Resource conservation interval when browser tab is hidden/minimized
+let pendingFile = null; // Track selected file for messages
+
+/**
+ * SafeFetch logic (No aggressive logouts)
+ */
+async function safeFetch(endpoint, options = {}, isBackground = false) {
+    try {
+        const response = await fetch(endpoint, options);
+        
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+            if (!isBackground) console.warn(`Session potentially expired for ${endpoint}. Received HTML instead of JSON.`);
+            return null;
+        }
+
+        if (!response.ok) {
+            if (!isBackground) console.error(`HTTP error ${response.status} for ${endpoint}`);
+            return null;
+        }
+        return await response.json();
+    } catch (err) {
+        if (!isBackground) console.error(`Fetch error for ${endpoint}:`, err);
+        return null;
+    }
+}
+
+/**
+ * HTML escape function to prevent XSS
+ */
+function escapeHtml(text) {
+    if (text === null || text === undefined || typeof text !== 'string') return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Custom Toast notification instead of standard block alert
+ */
+function showToast(message, isSuccess = false) {
+    if (/session|authentication required|unauthorized|forbidden|too many requests|429|log in again/i.test(String(message || ''))) {
+        return;
+    }
+
+    const toast = document.getElementById("portalNotification");
+    const toastText = document.getElementById("portalNotificationText");
+    if (!toast || !toastText) return;
+
+    toastText.textContent = message;
+    if (isSuccess) {
+        toast.style.borderColor = "#10b981";
+        toast.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
+    } else {
+        toast.style.borderColor = "#f59e0b";
+        toast.style.boxShadow = "0 0 15px rgba(245, 158, 11, 0.4)";
+    }
+    
+    toast.style.display = "block";
+    
+    clearTimeout(window.portalToastTimer);
+    window.portalToastTimer = setTimeout(() => {
+        toast.style.display = "none";
+    }, 4000);
+}
+
+/**
+ * Update Analysis Dashboard
+ */
+let progressChart = null;
+
+function updateProgressChart(completed, active, pending) {
+    const ctx = document.getElementById('overallProgressChart');
+    if (!ctx) return;
+
+    const total = completed + active + pending;
+    
+    const centerVal = document.getElementById('chartCenterValue');
+    const centerLbl = document.getElementById('chartCenterLabel');
+    
+    if (active > 0) {
+        if(centerVal) centerVal.textContent = active;
+        if(centerLbl) centerLbl.textContent = 'ACTIVE';
+        if(centerVal) centerVal.style.color = '#00f2fe';
+    } else if (completed > 0) {
+        if(centerVal) centerVal.textContent = completed;
+        if(centerLbl) centerLbl.textContent = 'COMPLETED';
+        if(centerVal) centerVal.style.color = '#10b981';
+    } else {
+        if(centerVal) centerVal.textContent = total;
+        if(centerLbl) centerLbl.textContent = 'PROJECTS';
+        if(centerVal) centerVal.style.color = 'white';
+    }
+
+    if (progressChart) {
+        progressChart.data.datasets[0].data = [completed, active, pending];
+        progressChart.update();
+    } else {
+        progressChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Active', 'Pending'],
+                datasets: [{
+                    data: [completed, active, pending],
+                    backgroundColor: ['#10b981', '#00f2fe', '#f59e0b'],
+                    borderWidth: 0,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                cutout: '80%',
+                plugins: { legend: { display: false } },
+                animation: { duration: 1000 },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+}
+
+function updateDashboard(projects) {
+    if (!projects || !Array.isArray(projects)) return;
+
+    let completedCount = 0;
+    let activeCount = 0;
+    let pendingCount = 0;
+    let totalValue = 0;
+    let totalPaid = 0;
+
+    projects.forEach(p => {
+        const status = p.status || 'Pending';
+        if (status === 'Completed') completedCount++;
+        else if (['Active', 'In Progress'].includes(status)) activeCount++;
+        else pendingCount++;
+
+        totalValue += parseFloat(p.price || 0);
+        totalPaid += parseFloat(p.amount_paid || 0);
+    });
+
+    const totalProjects = projects.length || 1;
+    const remainingBalance = totalValue - totalPaid;
+
+    // Update stat cards
+    const completedEl = document.getElementById("completedProjects");
+    const activeEl = document.getElementById("activeProjects");
+    const pendingEl = document.getElementById("pendingApprovals");
+
+    if (completedEl) completedEl.textContent = completedCount;
+    if (activeEl) activeEl.textContent = activeCount;
+    if (pendingEl) pendingEl.textContent = pendingCount;
+
+    // Update status distribution
+    const compCountEl = document.getElementById("completedCount");
+    const actCountEl = document.getElementById("activeCount");
+    const penCountEl = document.getElementById("pendingCount");
+
+    if (compCountEl) compCountEl.textContent = completedCount;
+    if (actCountEl) actCountEl.textContent = activeCount;
+    if (penCountEl) penCountEl.textContent = pendingCount;
+
+    const compBar = document.getElementById("completedBar");
+    const actBar = document.getElementById("activeBar");
+    const penBar = document.getElementById("pendingBar");
+
+    if (compBar) compBar.style.width = `${(completedCount / totalProjects) * 100}%`;
+    if (actBar) actBar.style.width = `${(activeCount / totalProjects) * 100}%`;
+    if (penBar) penBar.style.width = `${(pendingCount / totalProjects) * 100}%`;
+
+    // Update investment tracking
+    const totalProjVal = document.getElementById("totalProjectValue");
+    const amtPaidVal = document.getElementById("amountPaidValue");
+    const remBal = document.getElementById("remainingBalance");
+
+    if (totalProjVal) totalProjVal.textContent = `£${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if (amtPaidVal) amtPaidVal.textContent = `£${totalPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if (remBal) remBal.textContent = `£${remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+    const paymentProgress = totalValue > 0 ? (totalPaid / totalValue) * 100 : 0;
+    const payBar = document.getElementById("paymentProgress");
+    const remBar = document.getElementById("remainingProgress");
+
+    if (payBar) payBar.style.width = `${paymentProgress}%`;
+    if (remBar) remBar.style.width = `${100 - paymentProgress}%`;
+
+    // Update overall progress chart with detailed metrics
+    updateProgressChart(completedCount, activeCount, pendingCount);
+}
+
+/**
+ * Load Main Data (Stats & Projects)
+ */
+async function loadClientData() {
+    const dashData = await safeFetch('/api/dashboard');
+    if (dashData) {
+        const total = parseFloat(dashData.total_paid || 0);
+        const paidEl = document.getElementById("totalPaid");
+        if (paidEl) paidEl.textContent = `£${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+
+    const projectsResponse = await safeFetch('/api/projects');
+    if (projectsResponse && projectsResponse.data) {
+        renderProjects(projectsResponse.data);
+    }
+
+    loadInvoices();
+    loadMessages(false);
+}
+
+/**
+ * Lightweight Refresh for Polling Only (Speeds up processing)
+ */
+async function loadClientDataOnly() {
+    const dashData = await safeFetch('/api/dashboard', {}, true);
+    if (dashData) {
+        const total = parseFloat(dashData.total_paid || 0);
+        const paidEl = document.getElementById("totalPaid");
+        if (paidEl) paidEl.textContent = `£${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+
+    const projectsResponse = await safeFetch('/api/projects', {}, true);
+    if (projectsResponse && projectsResponse.data) {
+        renderProjects(projectsResponse.data);
+    }
+}
+
+function renderProjects(projects) {
+    const projList = document.getElementById("clientProjectList");
+    if (!projList) return;
+    projList.innerHTML = "";
+    
+    if (projects.length === 0) {
+        projList.innerHTML = `<div class="loading-placeholder">No projects currently configured.</div>`;
+        updateDashboard([]);
+        return;
+    }
+
+    projects.forEach(p => {
+        const status = p.status || 'Pending';
+        let progress = 10;
+        if (status === 'Completed') progress = 100;
+        else if (status === 'Active' || status === 'In Progress') progress = 60;
+        else if (status === 'Pending') progress = 20;
+
+        const dateCreated = p.date_created ? new Date(p.date_created).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+        projList.innerHTML += `
+            <div class="project-item">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h4 style="margin:0; color:#00f2fe; font-family:'Rajdhani'; font-weight: 700; font-size: 16px;">${escapeHtml(p.title)}</h4>
+                    <span style="font-size:10px; color:#8892b0">${dateCreated}</span>
+                </div>
+                <p style="font-size:13px; color:#8892b0; margin:10px 0">${escapeHtml(p.desc || 'System asset online.')}</p>
+                <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px; color:#8892b0">
+                    <span>STATUS: <b style="color:#00f2fe">${status.toUpperCase()}</b></span>
+                    <span>${progress}%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${progress}%"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    updateDashboard(projects);
+}
+
+/**
+ * Load & Render Invoices
+ */
+async function loadInvoices() {
+    const invoiceList = document.getElementById("clientInvoiceList");
+    if (!invoiceList) return;
+
+    const invoicesResponse = await safeFetch('/api/invoices', {}, false);
+    if (!invoicesResponse || !invoicesResponse.invoices) {
+        invoiceList.innerHTML = `<div class="loading-placeholder">No invoices found.</div>`;
+        return;
+    }
+
+    const invoices = invoicesResponse.invoices;
+    const pendingCount = invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue').length;
+    
+    // Update pending invoices stat
+    const pendingEl = document.getElementById("pendingInvoices");
+    if (pendingEl) pendingEl.textContent = pendingCount;
+
+    if (invoices.length === 0) {
+        invoiceList.innerHTML = `<div class="loading-placeholder">No invoices found.</div>`;
+        return;
+    }
+
+    // Show only first 5 invoices on dashboard
+    const displayInvoices = invoices.slice(0, 5);
+    
+    invoiceList.innerHTML = displayInvoices.map(invoice => {
+        const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid';
+        const displayStatus = isOverdue && invoice.status === 'pending' ? 'overdue' : invoice.status;
+        
+        return `
+            <div class="project-item" style="border-left: 3px solid ${displayStatus === 'paid' ? '#10b981' : displayStatus === 'overdue' ? '#ef4444' : '#f59e0b'};">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h4 style="margin:0; color:#00f2fe; font-family:'Rajdhani'; font-weight: 700; font-size: 14px;">${escapeHtml(invoice.invoice_number)}</h4>
+                    <span style="font-size:10px; padding: 4px 8px; border-radius: 4px; background: ${displayStatus === 'paid' ? 'rgba(16, 185, 129, 0.2)' : displayStatus === 'overdue' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${displayStatus === 'paid' ? '#10b981' : displayStatus === 'overdue' ? '#ef4444' : '#f59e0b'}; font-weight: 600;">${displayStatus.toUpperCase()}</span>
+                </div>
+                <p style="font-size:12px; color:#8892b0; margin:8px 0">${escapeHtml(invoice.project_title || 'Project')}</p>
+                <div style="display:flex; gap:13px; margin:8px 0; font-size:15px; color:white;">
+                    <span><i class="fa-solid fa-tag"></i> ${escapeHtml(invoice.invoice_type || 'N/A')}</span>
+                    <span><i class="fa-solid fa-money-bill"></i> Paid: £${(invoice.amount_paid || 0).toFixed(2)}</span>
+                    <span><i class="fa-solid fa-scale-balanced"></i> Balance: £${(invoice.balance || 0).toFixed(2)}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <span style="font-size:14px; color:white; font-weight:700;">£${invoice.amount.toFixed(2)}</span>
+                    <div style="display:flex; gap:8px;">
+                        ${invoice.status === 'pending' || invoice.status === 'overdue' ? `
+                            <a href="/client_billing" style="background: #00f2fe; color: #0a192f; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-block;">Pay Now</a>
+                        ` : ''}
+                        <button onclick="downloadInvoicePDF(${invoice.id})" style="background: rgba(255,255,255,0.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px;">PDF</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function payInvoice(invoiceId) {
+    try {
+        const response = await fetch(`/api/invoices/${invoiceId}/pay`);
+        const data = await response.json();
+        
+        if (data.approval_url) {
+            window.open(data.approval_url, '_blank');
+        } else {
+            showToast('Failed to get payment link');
+        }
+    } catch (error) {
+        console.error('Error getting payment link:', error);
+        showToast('Error getting payment link');
+    }
+}
+
+function downloadInvoicePDF(invoiceId) {
+    window.open(`/api/invoices/${invoiceId}/pdf`, '_blank');
+}
+
+/**
+ * Load & Render Chat History (Optimized: Skips attachment checks if count is identical)
+ */
+async function loadMessages(isBackground = true) {
+    const box = document.getElementById("chatBox");
+    if (!box) return;
+
+    const msgs = await safeFetch('/api/messages/0', {}, isBackground);
+    if (!msgs) {
+        if (!isBackground) {
+            box.innerHTML = `
+                <div class="text-center opacity-50 text-[11px] mt-10">
+                    <i class="fa-solid fa-satellite-dish text-2xl mb-2 text-cyan-400"></i>
+                    <p>Uplink established. Awaiting communication...</p>
+                </div>`;
+        }
+        return;
+    }
+    
+    // PERFORMANCE optimization: If message count matches local representation, return immediately!
+    const currentCount = parseInt(box.dataset.count || "0");
+    if (currentCount === msgs.length) {
+        return; 
+    }
+    
+    // Only fetch attachments when there are actually new messages
+    const filesData = await safeFetch('/api/messages/0/files', {}, true);
+    const filesMap = {};
+    if (filesData && filesData.files) {
+        filesData.files.forEach(f => {
+            if (!filesMap[f.message_id]) filesMap[f.message_id] = [];
+            filesMap[f.message_id].push(f);
+        });
+    }
+    
+    box.innerHTML = "";
+    
+    if (msgs.length === 0) {
+        box.innerHTML = `
+            <div class="text-center opacity-50 text-[11px] mt-10">
+                <i class="fa-solid fa-satellite-dish text-2xl mb-2 text-cyan-400"></i>
+                <p>Connection active. No previous messages.</p>
+            </div>`;
+    } else {
+        msgs.forEach(m => {
+            const isMe = m.from_role !== 'admin';
+            const timeStr = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+            
+            const div = document.createElement('div');
+            div.className = `msg ${isMe ? 'me' : 'admin'}`;
+            
+            let filesHtml = '';
+            if (filesMap[m.id] && filesMap[m.id].length > 0) {
+                filesHtml = '<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">';
+                filesMap[m.id].forEach(f => {
+                    const fileSizeKb = (f.file_size / 1024).toFixed(1);
+                    filesHtml += `
+                        <a href="/api/files/${f.id}/download" 
+                           style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid #00f2fe; border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                           onmouseover="this.style.background='rgba(0,242,254,0.3)'"
+                           onmouseout="this.style.background='rgba(0,242,254,0.15)'">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>${escapeHtml(f.original_filename)} (${fileSizeKb}KB)</span>
+                        </a>
+                    `;
+                });
+                filesHtml += '</div>';
+            }
+            
+            div.innerHTML = `
+                ${escapeHtml(m.content)}
+                ${filesHtml}
+                ${timeStr ? `<span class="msg-time">${timeStr}</span>` : ''}
+            `;
+            box.appendChild(div);
+        });
+    }
+    
+    box.scrollTop = box.scrollHeight;
+    box.dataset.count = msgs.length;
+}
+
+// ----------------------------------------
+// FILE SELECTION & UNIFIED MESSAGING
+// ----------------------------------------
+
+function handleFileSelection(e) {
+    const fileInput = e.target;
+    if (fileInput.files && fileInput.files.length > 0) {
+        pendingFile = fileInput.files[0];
+        
+        if (pendingFile.size > 100 * 1024 * 1024) {
+            showToast('File too large (max 100MB)');
+            removeSelectedFile();
+            return;
+        }
+        
+        // Show the preview UI
+        const previewContainer = document.getElementById('filePreviewContainer');
+        const previewFilename = document.getElementById('previewFilename');
+        
+        previewFilename.textContent = pendingFile.name;
+        previewContainer.style.display = 'flex';
+    }
+}
+
+function removeSelectedFile() {
+    pendingFile = null;
+    const fileInput = document.getElementById('clientFileInput');
+    if (fileInput) fileInput.value = '';
+    document.getElementById('filePreviewContainer').style.display = 'none';
+}
+
+async function sendClientMsg() {
+    const input = document.getElementById("msgInput");
+    let val = input.value.trim();
+
+    if (!val && !pendingFile) return; // Nothing to send
+
+    // If only a file is attached without text, auto-generate standard message text
+    if (!val && pendingFile) {
+        val = `📎 Attached File: ${pendingFile.name}`;
+    }
+
+    input.value = "";
+    const box = document.getElementById("chatBox");
+    
+    // Clear initial empty state UI if present
+    if (box.querySelector('.fa-satellite-dish')) {
+        box.innerHTML = '';
+    }
+
+    const localTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const tempId = "temp_" + Date.now();
+    const tempMsg = document.createElement('div');
+    tempMsg.className = "msg me";
+    tempMsg.id = tempId;
+    tempMsg.style.opacity = "0.7";
+
+    // Optimistically show attachment in UI while uploading
+    const attachmentHtml = pendingFile ? `<div style="margin-top: 5px; font-size: 11px; color: rgba(10, 25, 47, 0.8);"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(pendingFile.name)}</div>` : '';
+
+    tempMsg.innerHTML = `${escapeHtml(val)} ${attachmentHtml} <span class="msg-time msg-indicator" style="color: #0a192f;">${localTime} (Sending...)</span>`;
+    box.appendChild(tempMsg);
+    box.scrollTop = box.scrollHeight;
+
+    const currentCount = parseInt(box.dataset.count || "0");
+    box.dataset.count = currentCount + 1;
+
+    // Temporarily disable inputs
+    input.disabled = true;
+    const sendBtn = document.querySelector('.chat-send-btn');
+    if(sendBtn) sendBtn.disabled = true;
+
+    try {
+        // Step 1: Create the parent message to secure an ID
+        const response = await safeFetch('/api/messages/0', {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ content: val })
+        });
+
+        if (!response || response.status !== 'success') {
+            throw new Error("Message creation failed");
+        }
+
+        const indicator = tempMsg.querySelector(".msg-indicator");
+
+        // Step 2: Push the file dynamically attached to that specific message ID
+        if (pendingFile) {
+            if (indicator) indicator.textContent = `${localTime} (Uploading file...)`;
+            
+            const messageId = response.message.id;
+            const formData = new FormData();
+            formData.append('file', pendingFile);
+
+            try {
+                const uploadRes = await fetch(`/api/messages/${messageId}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadRes.ok) {
+                    const errorData = await uploadRes.json().catch(() => ({}));
+                    const errorMsg = errorData.error || `HTTP ${uploadRes.status}`;
+                    showToast(`File upload failed: ${errorMsg}`);
+                    console.error('File upload error:', errorData);
+                } else {
+                    const uploadData = await uploadRes.json().catch(() => ({}));
+                    if (uploadData.status === 'success' && uploadData.attachment) {
+                        // Update the temporary message with the actual download link
+                        const attachment = uploadData.attachment;
+                        const fileSizeKb = (attachment.file_size / 1024).toFixed(1);
+                        const downloadLinkHtml = `
+                            <div style="margin-top: 10px;">
+                                <a href="${attachment.download_url}" 
+                                   style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid #00f2fe; border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                                   onmouseover="this.style.background='rgba(0,242,254,0.3)'"
+                                   onmouseout="this.style.background='rgba(0,242,254,0.15)'">
+                                    <i class="fa-solid fa-paperclip"></i>
+                                    <span>${escapeHtml(attachment.original_filename)} (${fileSizeKb}KB)</span>
+                                </a>
+                            </div>
+                        `;
+                        // Replace the temporary attachment text with the actual download link
+                        const attachmentDiv = tempMsg.querySelector('div[style*="margin-top: 5px"]');
+                        if (attachmentDiv) {
+                            attachmentDiv.outerHTML = downloadLinkHtml;
+                        }
+                    } else {
+                        showToast(`File upload failed: ${uploadData.error || 'Unknown error'}`);
+                        console.error('File upload response:', uploadData);
+                    }
+                }
+            } catch (uploadError) {
+                console.error('File upload network error:', uploadError);
+                showToast('Network error during file upload. Please check your connection.');
+            }
+        }
+
+        // Complete & clean up
+        removeSelectedFile();
+        tempMsg.style.opacity = "1";
+        if (indicator) {
+            indicator.textContent = localTime;
+            indicator.style.color = "inherit";
+        }
+        
+    } catch (error) {
+        // Handle failure
+        tempMsg.style.opacity = "0.6";
+        const indicator = tempMsg.querySelector(".msg-indicator");
+        if (indicator) {
+            indicator.textContent = "Failed";
+            indicator.style.color = "#ef4444";
+        }
+        showToast("Failed to transmit. Please check your connection.");
+        box.dataset.count = currentCount; // revert count marker
+    } finally {
+        // Re-enable input components
+        input.disabled = false;
+        if(sendBtn) sendBtn.disabled = false;
+        input.focus();
+        loadMessages(true);
+    }
+}
+
+
+function initSmartPolling() {
+    if (syncInterval) clearInterval(syncInterval);
+    
+    loadClientData(); // Primary initialization load
+    
+    syncInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            // Rapidly poll messages to give zero-latency feel on received messages
+            loadMessages(true);
+            
+            // Poll heavier dashboard data less frequently (every 4th cycle = 8 seconds)
+            if (!window.heavyPollTicks) window.heavyPollTicks = 0;
+            window.heavyPollTicks++;
+            if (window.heavyPollTicks >= 2) {
+                loadClientDataOnly();
+                window.heavyPollTicks = 0;
+            }
+        }
+    }, snappyChatDelay);
+}
+
+// Event Listeners Initialization
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'clientFileInput') {
+        handleFileSelection(e); // Trigger updated preview layout logic
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    initSmartPolling();
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            loadMessages(false);
+            loadClientData();
+            initSmartPolling();
+        } else {
+            // Drop interval down when tab is hidden to preserve system memory and network pipeline
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = setInterval(() => {
+                    if (document.visibilityState === 'visible') {
+                        initSmartPolling();
+                    }
+                }, savingModeDelay);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

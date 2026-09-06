@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmmaStudio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icon Suite -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Modern CSS Custom Variables & Aesthetics */
+        :root {
+            --neon-cyan: #00f2fe;
+            --neon-blue: #4facfe;
+            --dark-bg: #0a192f;
+            --deep-space: #020617;
+        }
+
+        body {
+            background-color: var(--deep-space);
+            color: #f8fafc;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Global Cyberpunk Scrollbars */
+        .cyber-scroll::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .cyber-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .cyber-scroll::-webkit-scrollbar-thumb {
+            background: var(--neon-cyan);
+            border-radius: 10px;
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+        .cyber-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-blue);
+        }
+
+        /* Shared Card & Glass-Panel Token Classes */
+        .glass-panel {
+            background: rgba(10, 25, 47, 0.6);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(0, 242, 254, 0.25);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.05);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        /* Neon Glow Texts */
+        .glow-text {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+            color: #ffffff;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Standard Custom Styled Buttons */
+        .btn-outline {
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            color: var(--neon-cyan);
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            background: rgba(0, 242, 254, 0.02);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-outline:hover {
+            background: rgba(0, 242, 254, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+            color: #fff;
+        }
+
+        /* Interactive Notification Toast Container */
+        .notification-toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            background: rgba(10, 25, 47, 0.95);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 350px;
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .notification-toast.show {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Dropdown Styling */
+        .quick-notif-item {
+            transition: background 0.2s ease;
+        }
+        .quick-notif-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- GLOBAL AUDIO/VISUAL NOTIFICATION TOAST CONTAINER -->
+    <div id="globalNotificationToast" class="notification-toast">
+        <div id="notifIconContainer" class="text-cyan-400 text-lg mt-0.5">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="flex-grow min-w-0">
+            <h4 id="notifTitle" class="font-bold text-xs uppercase tracking-wider text-white" style="font-family: 'Rajdhani', sans-serif;">System Notification</h4>
+            <p id="notifMessage" class="text-[11px] text-slate-300 mt-1 leading-normal truncate"></p>
+        </div>
+        <button onclick="window.closeGlobalNotification()" class="text-slate-500 hover:text-white transition-colors" title="Close">
+            <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+    </div>
+
+    <!-- CLIENT PORTAL NAVIGATION HEADER -->
+    <nav class="relative flex justify-between items-center px-6 md:px-12 py-4 bg-[#0a192f]/90 backdrop-blur-md border-b border-white/5 z-[100] flex-shrink-0">
+        <div class="brand font-extrabold text-xl tracking-widest text-[#00f2fe] flex items-center gap-2 font-mono" style="font-family: 'Rajdhani', sans-serif;">
+            <img src="/static/images/EmmaStudio logo (1).svg" alt="EmmaStudio Logo" class="h-8 w-auto transition-all duration-300 hover:scale-105">
+        </div>
+        
+        <!-- Hamburger Menu Button (Mobile) -->
+        <button id="mobileMenuBtn" class="flex md:hidden text-slate-400 hover:text-white focus:outline-none text-xl p-1" aria-label="Toggle Navigation Menu">
+            <i class="fa-solid fa-bars" id="burgerIcon"></i>
+        </button>
+
+        <!-- Navigation Links -->
+        <div id="navLinks" class="hidden md:flex flex-col md:flex-row absolute md:relative top-full left-0 w-full md:w-auto bg-[#0a192f]/95 md:bg-transparent border-b md:border-none border-white/5 md:top-auto md:left-auto md:p-0 p-4 gap-4 md:gap-8 z-[101] transition-all duration-300 items-start md:items-center">
+            <a href="/client/dashboard" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-chart-line"></i> Portal</a>
+            <a href="/client/order" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-cart-shopping"></i> Order Service</a>
+            <a href="/client_billing" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-receipt"></i> Billing</a>
+            <a href="/services" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-folder-open"></i> Portfolio</a>
+            <a href="/client_feedback" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-comment-dots"></i> Feedback</a>
+
+
+            <!-- Notification Bell & Quick Dropdown Wrap -->
+            <div class="relative inline-block w-full md:w-auto">
+                <button id="notificationBell" class="relative text-slate-400 hover:text-[#00f2fe] transition-colors p-1 focus:outline-none flex items-center gap-2 md:gap-0" aria-label="Notifications Panel">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                    <span class="md:hidden text-xs uppercase font-bold tracking-wider text-slate-400">Notifications</span>
+                    <span id="notificationBadge" class="absolute top-1 md:-top-1 left-4 md:left-auto md:-right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+                </button>
+                
+                <!-- Quick Dropdown Summary Panel -->
+                <div id="quickNotificationDropdown" class="hidden absolute left-0 md:left-auto md:right-0 mt-3 w-full md:w-80 bg-[#0a192f]/95 border border-[#00f2fe]/30 rounded-xl shadow-[0_10px_30px_rgba(0,242,254,0.2)] z-[1000] overflow-hidden backdrop-blur-md animate-fadeIn">
+                    <div class="p-4 border-b border-white/10 flex justify-between items-center bg-[#071324]">
+                        <span class="font-bold text-xs uppercase tracking-wider text-[#00f2fe]" style="font-family: 'Rajdhani', sans-serif;">Alert Center</span>
+                        <button onclick="markAllNotificationsReadQuick(event)" class="text-[10px] text-slate-400 hover:text-[#00f2fe] transition-colors focus:outline-none">Mark all read</button>
+                    </div>
+                    
+                    <div id="quickNotificationsList" class="max-h-64 overflow-y-auto cyber-scroll divide-y divide-white/5">
+                        <div class="p-4 text-center text-xs text-slate-400">
+                            <i class="fa-solid fa-circle-notch fa-spin text-cyan-400 mr-2"></i>Loading alerts...
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-t border-white/10 bg-[#071324] text-center">
+                        <a href="/client/notifications" class="block text-xs font-bold text-[#00f2fe] hover:underline" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">
+                            SEE ALL NOTIFICATIONS <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="/logout" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold tracking-wider flex items-center gap-2 py-1 transition-colors"><i class="fa-solid fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </nav>
+
+    <!-- Interactive Sub-Content Block Section -->
+    <main class="flex-grow py-8 px-4 md:px-8 max-w-7xl mx-auto w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Layout Footer -->
+    <footer class="py-6 text-center border-t border-white/5 bg-[#020617] text-xs text-slate-500 font-mono tracking-wider mt-auto flex-shrink-0">
+        &copy; 2026 EMMA.STUDIO. ALL RIGHTS SECURED.
+    </footer>
+
+    <!-- Native Dynamic Menu Event Handlers & Global Notification Engine -->
+    <script>
+        // Tab Title Alert variables
+        let titleFlashInterval = null;
+        const originalTitle = document.title || "Client Portal";
+
+        // Modern dynamic Web Audio API chime synthesizer
+        window.playNotificationChime = function() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                
+                const ctx = new AudioContext();
+                
+                // Note 1: Fast energetic high frequency pulse
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5 key
+                gain1.gain.setValueAtTime(0.06, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.16);
+
+                // Note 2: Harmonizing secondary pulse slightly delayed
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(1174.66, ctx.currentTime); // D6 key
+                    gain2.gain.setValueAtTime(0.05, ctx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                    
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.start();
+                    osc2.stop(ctx.currentTime + 0.26);
+                }, 80);
+                
+            } catch (err) {
+                console.warn("Audio Context initialization was blocked or is unsupported.");
+            }
+        };
+
+        // Tab Title Flashing Alert Controllers
+        window.startTabFlash = function(message) {
+            if (titleFlashInterval) clearInterval(titleFlashInterval);
+            let isAlt = false;
+            titleFlashInterval = setInterval(() => {
+                document.title = isAlt ? originalTitle : message;
+                isAlt = !isAlt;
+            }, 1000);
+        };
+
+        window.stopTabFlash = function() {
+            if (titleFlashInterval) {
+                clearInterval(titleFlashInterval);
+                titleFlashInterval = null;
+                document.title = originalTitle;
+            }
+        };
+
+        // Centralized Global Toast Dispatcher
+        window.showGlobalNotification = function(title, message, type = 'message') {
+            const toast = document.getElementById('globalNotificationToast');
+            const titleEl = document.getElementById('notifTitle');
+            const messageEl = document.getElementById('notifMessage');
+            const iconContainer = document.getElementById('notifIconContainer');
+
+            if (!toast || !titleEl || !messageEl) return;
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            // Update border and icon aesthetics based on context
+            if (type === 'project_status') {
+                toast.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+                toast.style.boxShadow = '0 0 25px rgba(168, 85, 247, 0.15)';
+                iconContainer.innerHTML = '<i class="fa-solid fa-circle-nodes text-purple-400"></i>';
+            } else if (type === 'payment') {
+                toast.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                toast.style.boxShadow = '0 0 25px rgba(16, 185, 129, 0.15)';
+                iconContainer.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else {
+                toast.style.borderColor = 'rgba(0, 242, 254, 0.4)';
+                toast.style.boxShadow = '0 0 25px rgba(0, 242, 254, 0.15)';
+                iconContainer.innerHTML = '<i class="fa-solid fa-comments text-cyan-400"></i>';
+            }
+
+            // Show Toast & Play custom synth chord
+            toast.classList.add('show');
+            window.playNotificationChime();
+
+            // Refresh quick drop lists if menu is currently toggled
+            if (!document.getElementById('quickNotificationDropdown').classList.contains('hidden')) {
+                loadQuickNotifications();
+            }
+            window.updateNotificationBadgeCount();
+
+            // Flash Tab Title if user is unfocused
+            if (document.visibilityState !== 'visible') {
+                window.startTabFlash(`✉ New ${type.replace('_', ' ')}!`);
+            }
+
+            // Auto-hide after 5 seconds
+            clearTimeout(window.globalNotifTimer);
+            window.globalNotifTimer = setTimeout(() => {
+                window.closeGlobalNotification();
+            }, 5000);
+        };
+
+        window.closeGlobalNotification = function() {
+            const toast = document.getElementById('globalNotificationToast');
+            if (toast) {
+                toast.classList.remove('show');
+            }
+        };
+
+        // --- Notification Quick Menu Engine ---
+        window.updateNotificationBadgeCount = function() {
+            fetch('/api/client/notifications/stats')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('notificationBadge');
+                    if (badge) {
+                        if (data.unread > 0) {
+                            badge.textContent = data.unread;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                })
+                .catch(err => console.error('Error fetching quick stats:', err));
+        };
+
+        function toggleQuickDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('quickNotificationDropdown');
+            if (!dropdown) return;
+            
+            // Verify login status before showing notifications
+            fetch('/api/loggedin')
+               .then(res => res.json())
+               .then(data => {
+                  if (data.status === 'notloggedin') {
+                     window.location.href = '/login';
+                     return;
+                  }
+                  
+                  // Only show dropdown if logged in
+                  if (dropdown) {
+                    const isHidden = dropdown.classList.contains('hidden');
+                    if (isHidden) {
+                        dropdown.classList.remove('hidden');
+                        loadQuickNotifications();
+                    } else {
+                        dropdown.classList.add('hidden');
+                    }
+                  }
+               })
+               .catch(err => {
+                  console.error('Error checking login status:', err);
+                  // On error, redirect to login for safety
+                  window.location.href = '/login';
+               });
+        }
+
+        function loadQuickNotifications() {
+            const listContainer = document.getElementById('quickNotificationsList');
+            if (!listContainer) return;
+
+            fetch('/api/client/notifications?page=1&per_page=5')
+                .then(res => res.json())
+                .then(data => {
+                    const notifications = data.notifications || [];
+                    if (notifications.length === 0) {
+                        listContainer.innerHTML = `
+                            <div class="p-6 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+                                <i class="fa-solid fa-bell-slash text-base text-slate-600"></i>
+                                <span>No notifications found</span>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    listContainer.innerHTML = notifications.map(n => {
+                        const iconType = n.type === 'message' ? 'fa-comments text-cyan-400' :
+                                         n.type === 'payment' ? 'fa-credit-card text-emerald-400' :
+                                         n.type === 'project_status' ? 'fa-circle-nodes text-purple-400' : 'fa-bell text-slate-400';
+                        return `
+                            <div class="quick-notif-item p-3 cursor-pointer flex items-start gap-3 transition-colors ${n.read ? 'opacity-60' : 'bg-cyan-500/5'}" onclick="handleQuickNotifClick(${n.id})">
+                                <i class="fa-solid ${iconType} mt-1 text-sm flex-shrink-0"></i>
+                                <div class="min-w-0 flex-grow">
+                                    <h5 class="text-xs font-semibold text-white truncate">${escapeHtml(n.title)}</h5>
+                                    <p class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(n.message)}</p>
+                                    <span class="text-[9px] text-slate-500 block mt-1">${formatQuickTime(n.created_at)}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error('Error loading quick dropdown items:', err);
+                    listContainer.innerHTML = `<div class="p-4 text-center text-xs text-red-400">Failed to load alerts</div>`;
+                });
+        }
+
+        function handleQuickNotifClick(notifId) {
+            // Mark as read and then navigate smoothly
+            fetch(`/api/client/notifications/${notifId}/read`, { method: 'POST' })
+                .then(() => {
+                    window.updateNotificationBadgeCount();
+                    window.location.href = '/client/notifications';
+                })
+                .catch(() => {
+                    window.location.href = '/client/notifications';
+                });
+        }
+
+        function markAllNotificationsReadQuick(event) {
+            event.stopPropagation();
+            fetch('/api/client/notifications/mark-all-read', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadQuickNotifications();
+                        window.updateNotificationBadgeCount();
+                    }
+                })
+                .catch(err => console.error('Error in quick mark-all:', err));
+        }
+
+        function formatQuickTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Core DOM Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuBtn = document.getElementById('mobileMenuBtn');
+            const navLinks = document.getElementById('navLinks');
+            const burgerIcon = document.getElementById('burgerIcon');
+            const bellBtn = document.getElementById('notificationBell');
+            const quickDropdown = document.getElementById('quickNotificationDropdown');
+            
+            // Toggle dropdown on bell click
+            if (bellBtn) {
+                bellBtn.addEventListener('click', toggleQuickDropdown);
+            }
+
+            // Click outside to close dropdown
+            document.addEventListener('click', (e) => {
+                if (quickDropdown && !quickDropdown.classList.contains('hidden') && !bellBtn.contains(e.target) && !quickDropdown.contains(e.target)) {
+                    quickDropdown.classList.add('hidden');
+                }
+            });
+
+            if (menuBtn && navLinks && burgerIcon) {
+                menuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    navLinks.classList.toggle('hidden');
+                    navLinks.classList.toggle('flex');
+                    
+                    if (navLinks.classList.contains('hidden')) {
+                        burgerIcon.className = "fa-solid fa-bars";
+                    } else {
+                        burgerIcon.className = "fa-solid fa-xmark";
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!navLinks.classList.contains('hidden') && !menuBtn.contains(e.target) && !navLinks.contains(e.target)) {
+                        navLinks.classList.add('hidden');
+                        navLinks.classList.remove('flex');
+                        burgerIcon.className = "fa-solid fa-bars";
+                    }
+                });
+            }
+
+            // Clear tab flashing alerts whenever the client returns to the portal window
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    window.stopTabFlash();
+                }
+            });
+
+            // Run initial badge update
+            window.updateNotificationBadgeCount();
+        });
+    </script>
+    <script src="/static/cookie-consent.js"></script>
+</body>
+</html>

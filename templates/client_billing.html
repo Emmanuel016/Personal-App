@@ -1,0 +1,912 @@
+{% extends "client_base.html" %}
+
+{% block content %}
+<div class="container animate-fadeIn">
+    <div class="quick-nav-header flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 mb-8 border-b border-white/10">
+        <div>
+            <h1 class="glow-text text-3xl font-bold tracking-wider text-white">BILLING & PAYMENTS</h1>
+            <p class="text-cyan-400 text-sm">Review your invoices, track paid amounts, and settle outstanding balances securely.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 md:gap-3">
+            <a href="/client/dashboard" class="btn-quick-nav">
+                <i class="fa-solid fa-chart-line"></i> Portal Dashboard
+            </a>
+            <a href="/client_billing" class="btn-quick-nav active">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Billing & Payments
+            </a>
+            <a href="/client/order" class="btn-quick-nav">
+                <i class="fa-solid fa-cart-plus"></i> Order Service
+            </a>
+        </div>
+    </div>
+
+    <div class="billing-stats-grid">
+        <div class="card billing-stat">
+            <i class="fa-solid fa-wallet"></i>
+            <div>
+                <p class="stat-label">Total Contract Value</p>
+                <p class="stat-value" id="billingTotalDue">£0.00</p>
+            </div>
+        </div>
+        <div class="card billing-stat">
+            <i class="fa-solid fa-credit-card"></i>
+            <div>
+                <p class="stat-label">Total Settle Amount</p>
+                <p class="stat-value" id="billingTotalPaid">£0.00</p>
+            </div>
+        </div>
+        <div class="card billing-stat">
+            <i class="fa-solid fa-clock"></i>
+            <div>
+                <p class="stat-label">Outstanding Balance</p>
+                <p class="stat-value" id="billingOutstanding">£0.00</p>
+            </div>
+        </div>
+        <div class="card billing-stat">
+            <i class="fa-solid fa-file-invoice"></i>
+            <div>
+                <p class="stat-label">Open Projects</p>
+                <p class="stat-value" id="billingInvoiceCount">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card glass-panel mb-8">
+        <h3 class="font-bold text-white tracking-wide"><i class="fa-solid fa-list-check text-cyan-400"></i> ACTIVE ACCOUNT STATEMENTS</h3>
+        <p class="text-gray-400 mt-2 text-sm">Each record below reflects a current project contract. Settle funds directly against individual statements or use the quick checkout form below.</p>
+        <div class="billing-controls mt-5 flex flex-wrap text-black items-center gap-3">
+            <label for="billingSort" class="text-sm text-black text-slate-300 uppercase tracking-wide font-semibold">Sort by:</label>
+            <select id="billingSort" class="sort-select" onchange="renderBillingProjects()">
+                <option value="recent">Most Recent</option>
+                <option value="oldest">Oldest</option>
+                <option value="expensive">Most Expensive</option>
+            </select>
+        </div>
+
+        <div id="billingItems" class="billing-list mt-6">
+            <div class="billing-empty">
+                <i class="fa-solid fa-circle-notch fa-spin text-cyan-400 text-2xl"></i>
+                <p class="text-sm text-gray-400 mt-2">Connecting to billing service...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-section animate-fadeIn">
+        <h2 class="font-bold text-white tracking-wide flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-cyan-400"></i> SECURE PAYMENT TERMINAL
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Select an active contract balance below to process a secure installment or payment milestone using PayPal.</p>
+
+        <div class="payment-form">
+            <div class="form-group mb-6">
+                <label for="project-select" class="block text-xs font-bold tracking-wider text-slate-400 mb-2 uppercase font-mono">Select Target Project:</label>
+                <select id="project-select" onchange="updateProjectDetails()" class="w-full p-3 rounded-lg focus:outline-none transition-all duration-200">
+                    <option value="">-- Choose a project statements sheet --</option>
+                </select>
+            </div>
+
+            <div id="project-details" class="project-details hidden mb-6">
+                <div class="detail-row">
+                    <span>Project:</span>
+                    <strong id="detail-title"></strong>
+                </div>
+                <div class="detail-row">
+                    <span>Agreed Contract:</span>
+                    <strong id="detail-price">£0.00</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Total Settled:</span>
+                    <strong id="detail-paid">£0.00</strong>
+                </div>
+                <div class="detail-row highlight">
+                    <span>Remaining Balance:</span>
+                    <strong id="detail-outstanding">£0.00</strong>
+                </div>
+            </div>
+
+            <div class="form-group mb-6">
+                <label for="amount-input" class="block text-xs font-bold tracking-wider text-slate-400 mb-2 uppercase font-mono">Payment Amount (GBP):</label>
+                <div class="amount-input-group flex items-center rounded-lg overflow-hidden transition-all duration-200">
+                    <span class="currency px-4 py-3 font-bold border-r">£</span>
+                    <input
+                        type="number"
+                        id="amount-input"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0.01"
+                        oninput="updatePaymentUI()"
+                        class="flex-grow p-3 focus:outline-none bg-transparent text-white payment-input"
+                    >
+                </div>
+                <small class="text-xs text-slate-500 mt-2 block">Specify the precise payment milestone amount you want to authorize.</small>
+            </div>
+
+            <div class="form-group mb-6">
+                <label class="block text-xs font-bold tracking-wider text-slate-400 mb-2 font-mono uppercase">Authorized Gateway Channel</label>
+                <div class="payment-methods">
+                    <div class="payment-btn active w-full p-3 rounded-lg font-medium flex items-center gap-3">
+                        <span class="text-lg">🏦</span> Secure PayPal Routing Network
+                    </div>
+                </div>
+            </div>
+
+            <button 
+                id="pay-button" 
+                class="btn-payment-action mt-6 w-full py-4 text-base font-bold flex items-center justify-center gap-3"
+                onclick="initiatePayment()"
+                disabled
+            >
+                <i class="fa-solid fa-lock"></i> AUTHORIZE SECURE GATEWAY CHECKOUT
+            </button>
+
+            <div id="payment-status" class="payment-status hidden mt-4 p-4 rounded-lg text-sm"></div>
+        </div>
+    </div>
+
+    <div class="card glass-panel mt-6 border-t-2 border-purple-500">
+        <h3 class="font-bold text-white tracking-wide"><i class="fa-solid fa-shield-halved text-purple-400"></i> SECURE PAYMENT PROTOCOLS</h3>
+        <ul class="protocol-list mt-4">
+            <li><i class="fa-solid fa-check text-purple-400"></i> Your financial transactions are mapped uniquely to your account session.</li>
+            <li><i class="fa-solid fa-check text-purple-400"></i> Project balances and installment data update automatically on deposit approval.</li>
+            <li><i class="fa-solid fa-check text-purple-400"></i> All connection details are guarded by modern secure socket technology.</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+/* Stats Layout Grid styling */
+.billing-stats-grid {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.billing-stat {
+    flex: 1 1 220px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 22px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(0,242,254,0.1);
+    border-radius: 12px;
+    min-width: 220px;
+}
+
+.billing-stat i {
+    font-size: 24px;
+    color: #00f2fe;
+    min-width: 40px;
+}
+
+.stat-label {
+    margin: 0 0 4px;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.stat-value {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* Statement List layouts */
+.billing-list {
+    display: grid;
+    gap: 18px;
+}
+
+.billing-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    padding: 24px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    transition: all 0.2s ease;
+}
+
+.billing-card:hover {
+    border-color: rgba(0, 242, 254, 0.2);
+}
+
+.billing-card .meta {
+    display: grid;
+    gap: 8px;
+}
+
+.billing-card h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.billing-card .detail {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.billing-card .balances {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.billing-card .badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.badge-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.15); }
+.badge-active { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.15); }
+.badge-completed { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); }
+
+/* Quick Statement Checkout Inputs and Actions */
+.billing-card .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    width: 240px;
+}
+
+.billing-card input {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    width: 100%;
+}
+
+.billing-card input:focus {
+    border-color: #00f2fe;
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+}
+
+.billing-card input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Inter', sans-serif;
+}
+
+.billing-card input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.payment-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Inter', sans-serif;
+}
+
+.payment-input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Individual Card "Pay Now" Button Component */
+.btn-primary {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: #050b14;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+    filter: brightness(1.08);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.billing-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px;
+    color: #94a3b8;
+    text-align: center;
+    border: 1px dashed rgba(255,255,255,0.06);
+    border-radius: 12px;
+}
+
+/* Cyber Glass Checkout Terminal Box Revamp */
+.payment-section {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 36px;
+    color: white;
+    margin: 40px 0;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.payment-section h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+}
+
+.payment-form {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 30px;
+    color: #f8fafc;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Elegant Dark Inputs & Focus Rings */
+.payment-form select {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 12px;
+}
+
+.payment-form select option {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.payment-form select:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+}
+
+.payment-form .amount-input-group {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.payment-form .amount-input-group:focus-within {
+    border-color: #00f2fe;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+}
+
+.payment-form .currency {
+    background: rgba(15, 23, 42, 0.6);
+    color: #00f2fe;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Refined Statement Snapshot Layout */
+.project-details {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 18px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 14px;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row.highlight {
+    background: rgba(16, 185, 129, 0.08);
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-top: 8px;
+    font-weight: 600;
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.detail-row span {
+    color: #94a3b8;
+}
+
+.detail-row strong {
+    color: #ffffff;
+}
+
+/* Gateway Channel Elements */
+.payment-methods .payment-btn.active {
+    background: rgba(0, 242, 254, 0.04);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    color: #00f2fe;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+}
+
+/* Primary Checkout Dispatch Action Button */
+.btn-payment-action {
+    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+    color: #ffffff;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-payment-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5);
+    filter: brightness(1.08);
+}
+
+.btn-payment-action:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-payment-action:disabled {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.25) !important;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* High Contrast Alert Frameworks */
+.payment-status {
+    font-weight: 500;
+}
+
+.payment-status.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.payment-status.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.payment-status.loading {
+    background: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+/* Quick Nav Navigation Aesthetics */
+.btn-quick-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-quick-nav:hover {
+    color: #ffffff;
+    background: rgba(0, 242, 254, 0.05);
+    border-color: rgba(0, 242, 254, 0.3);
+}
+
+.btn-quick-nav.active {
+    color: #050b14;
+    background: #00f2fe;
+    border-color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+}
+
+.protocol-list {
+    list-style: none;
+    padding: 0;
+}
+
+.protocol-list li {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .billing-card {
+        grid-template-columns: 1fr;
+    }
+    .billing-card .controls {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+let allProjects = [];
+
+// Settle and load statement lists from local database API
+async function loadBillingPage() {
+    const billingItemsContainer = document.getElementById('billingItems');
+    try {
+        const response = await fetch('/api/projects');
+        
+        if (response.status === 401 || response.status === 403) {
+            console.warn("Client session is currently unauthenticated or unauthorized.");
+            billingItemsContainer.innerHTML = '<div class="billing-empty"><p class="text-sm">Unable to load billing records. Please check your credentials.</p></div>';
+            return;
+        }
+
+        if (!response.ok) {
+            billingItemsContainer.innerHTML = `<div class="billing-empty"><p class="text-sm">Billing service unavailable (${response.status}).</p></div>`;
+            return;
+        }
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonError) {
+            console.error('Billing response parse error:', jsonError);
+            const text = await response.text();
+            billingItemsContainer.innerHTML = `<div class="billing-empty"><p class="text-sm">Received invalid billing data.</p><pre class="text-xs text-left mt-3">${text}</pre></div>`;
+            return;
+        }
+
+        console.debug('Billing fetch response', result);
+        const projects = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : null);
+        
+        if (!projects) {
+            billingItemsContainer.innerHTML = '<div class="billing-empty"><p class="text-sm">Statement interface received unexpected billing response.</p></div>';
+            return;
+        }
+
+        allProjects = projects;
+
+        const sortedProjects = sortProjects(allProjects);
+        const active = sortedProjects.filter(p => p.status !== 'Completed');
+        const totalPaid = sortedProjects.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
+        const totalPrice = sortedProjects.reduce((sum, p) => sum + Number(p.price || 0), 0);
+        const outstanding = Math.max(totalPrice - totalPaid, 0);
+
+        // Load invoices for additional billing information
+        const invoices = await loadClientInvoices();
+        const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue');
+        const pendingInvoiceAmount = pendingInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+        const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+        const paidInvoiceAmount = paidInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+
+        // Update indicators
+        document.getElementById('billingTotalDue').textContent = `£${totalPrice.toFixed(2)}`;
+        document.getElementById('billingTotalPaid').textContent = `£${totalPaid.toFixed(2)}`;
+        document.getElementById('billingOutstanding').textContent = `£${outstanding.toFixed(2)}`;
+        document.getElementById('billingInvoiceCount').textContent = `${active.length} (${pendingInvoices.length} pending invoices)`;
+
+        // If no records
+        if (!sortedProjects.length) {
+            billingItemsContainer.innerHTML = '<div class="billing-empty"><p class="text-sm">No billing statements found associated with this account.</p></div>';
+            return;
+        }
+
+        renderBillingProjects();
+
+        // Populate dropdown menu for PayPal selection
+        loadPayPalProjectsDropdown();
+    } catch (error) {
+        console.error('Error fetching statements:', error);
+        billingItemsContainer.innerHTML = '<div class="billing-empty"><p class="text-sm">Statements fetch failed. Check connection.</p></div>';
+    }
+}
+
+function getSelectedBillingSort() {
+    const sortSelect = document.getElementById('billingSort');
+    return sortSelect ? sortSelect.value : 'recent';
+}
+
+function sortProjects(projects) {
+    const sortKey = getSelectedBillingSort();
+    const sorted = [...projects];
+
+    if (sortKey === 'oldest') {
+        sorted.sort((a, b) => new Date(a.date_created) - new Date(b.date_created));
+    } else if (sortKey === 'expensive') {
+        sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    } else {
+        sorted.sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
+    }
+
+    return sorted;
+}
+
+function renderBillingProjects() {
+    const billingItemsContainer = document.getElementById('billingItems');
+    if (!billingItemsContainer || !Array.isArray(allProjects)) return;
+
+    const sortedProjects = sortProjects(allProjects);
+    billingItemsContainer.innerHTML = sortedProjects.map(project => {
+        const paid = Number(project.amount_paid || 0);
+        const price = Number(project.price || 0);
+        const due = Math.max(price - paid, 0);
+        const statusClass = project.status === 'Completed' ? 'badge-completed' : project.status === 'Pending' ? 'badge-pending' : 'badge-active';
+
+        return `
+            <div class="billing-card animate-fadeIn">
+                <div class="meta">
+                    <h4>${project.title || 'Draft Statement Card'}</h4>
+                    <div class="detail">${project.desc || 'Operational software development statement record.'}</div>
+                    <div class="balances">
+                        <span class="badge ${statusClass}">${project.status || 'Active'}</span>
+                        <span class="badge">Value: £${price.toFixed(2)}</span>
+                        <span class="badge">Settled: £${paid.toFixed(2)}</span>
+                        <span class="badge">Due: £${due.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <input 
+                        type="number" 
+                        min="1" 
+                        step="0.01" 
+                        placeholder="Enter amount (£)" 
+                        data-id="${project.id}" 
+                        class="billingPayInput" 
+                        ${due <= 0 ? 'disabled' : ''} 
+                        onkeypress="if(event.key==='Enter') processBillingPayment(${project.id})"
+                    >
+                    <button class="btn-primary mt-2 w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300" onclick="processBillingPayment(${project.id})" ${due <= 0 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-credit-card"></i> Pay Now
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    loadPayPalProjectsDropdown();
+}
+
+// Quick secure installment payment processing 
+async function processBillingPayment(projectId) {
+    const input = document.querySelector(`input[data-id='${projectId}']`);
+    if (!input) return;
+    const value = Number(input.value || 0);
+    if (value <= 0) {
+        showErrorNotification('Invalid Amount', 'Please type a valid installment value.');
+        return;
+    }
+
+    const button = input.parentElement.querySelector('button');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authorizing...';
+
+    try {
+        const response = await fetch('/api/payment/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                project_id: projectId,
+                amount: value,
+                payment_method: 'PayPal System'
+            })
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            console.error("Authorization check failed.");
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return;
+        }
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            showErrorNotification('Authorization Failure', result.error || 'The system could not initialize transaction.');
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return;
+        }
+
+        // Display Success Toast & Re-fetch State
+        showPaymentNotification(`£${value.toFixed(2)} Approved`, 'Your installment has been confirmed. Portal ledger is updated.');
+        input.value = '';
+        button.disabled = false;
+        button.innerHTML = originalText;
+        
+        setTimeout(loadBillingPage, 1500);
+    } catch (error) {
+        console.error('Payment confirmation error:', error);
+        showErrorNotification('Network Failure', 'Lead connection lost during statement deposit.');
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
+
+// Load choices into dropdown selection box
+function loadPayPalProjectsDropdown() {
+    const select = document.getElementById('project-select');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Choose a project statements sheet --</option>';
+    allProjects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.title} - £${Number(project.price || 0).toFixed(2)}`;
+        select.appendChild(option);
+    });
+}
+
+// Load invoice data for client billing page
+async function loadClientInvoices() {
+    try {
+        const response = await fetch('/api/invoices');
+        
+        if (response.status === 401 || response.status === 403) {
+            console.warn("Unable to load invoices - authentication required");
+            return [];
+        }
+        
+        const result = await response.json();
+        return result.invoices || [];
+    } catch (error) {
+        console.error('Error fetching invoices:', error);
+        return [];
+    }
+}
+
+// Live update of payment snapshot panel upon choice change
+function updateProjectDetails() {
+    const projectId = document.getElementById('project-select').value;
+    const projectDetailsDiv = document.getElementById('project-details');
+    
+    if (!projectId) {
+        projectDetailsDiv.classList.add('hidden');
+        document.getElementById('pay-button').disabled = true;
+        return;
+    }
+
+    const project = allProjects.find(p => p.id == projectId);
+    if (project) {
+        document.getElementById('detail-title').textContent = project.title;
+        document.getElementById('detail-price').textContent = `£${parseFloat(project.price || 0).toFixed(2)}`;
+        document.getElementById('detail-paid').textContent = `£${parseFloat(project.amount_paid || 0).toFixed(2)}`;
+        
+        const outstanding = parseFloat(project.price || 0) - parseFloat(project.amount_paid || 0);
+        document.getElementById('detail-outstanding').textContent = `£${outstanding.toFixed(2)}`;
+        
+        projectDetailsDiv.classList.remove('hidden');
+        
+        // Populate current remaining value automatically
+        document.getElementById('amount-input').value = outstanding > 0 ? outstanding.toFixed(2) : '0.00';
+        updatePaymentUI();
+    }
+}
+
+// Update payment terminal state
+function updatePaymentUI() {
+    const amount = parseFloat(document.getElementById('amount-input').value) || 0;
+    const projectId = document.getElementById('project-select').value;
+    const payButton = document.getElementById('pay-button');
+
+    payButton.disabled = !projectId || amount <= 0;
+}
+
+// Initiate Secure Checkout flow
+async function initiatePayment() {
+    const projectId = parseInt(document.getElementById('project-select').value);
+    const amount = parseFloat(document.getElementById('amount-input').value);
+
+    if (!projectId || amount <= 0) {
+        showPayPalStatus('Please configure project target and specify balance amount.', 'error');
+        return;
+    }
+
+    showPayPalStatus('Initializing secure checkout routing with PayPal...', 'loading');
+
+    try {
+        const response = await fetch('/api/paypal/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                project_id: projectId,
+                amount: amount
+            })
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            showPayPalStatus('Session verification failed. Please refresh your login.', 'error');
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            showPayPalStatus('Checkout initialized. Connecting to PayPal secure page...', 'loading');
+            setTimeout(() => {
+                window.location.href = data.approval_url;
+            }, 600);
+        } else {
+            showPayPalStatus(`Gateway Error: ${data.error || 'Authorization refused.'}`, 'error');
+        }
+    } catch (error) {
+        console.error('PayPal checkout handoff error:', error);
+        showPayPalStatus(`Connection failed: unable to map gateway channel.`, 'error');
+    }
+}
+
+// Show PayPal Status message on input wrapper
+function showPayPalStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('payment-status');
+    if (!statusDiv) return;
+    
+    statusDiv.textContent = message;
+    statusDiv.className = `payment-status ${type} mt-4 p-4 rounded-lg text-sm`;
+    statusDiv.classList.remove('hidden');
+
+    if (type === 'success') {
+        setTimeout(() => {
+            statusDiv.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+// Toast System Triggers
+function showPaymentNotification(title, message) {
+    if (window.showGlobalNotification) {
+        window.showGlobalNotification(title, message, 'payment');
+    }
+}
+
+function showErrorNotification(title, message) {
+    if (window.showGlobalNotification) {
+        window.showGlobalNotification(title, message, 'error');
+    }
+}
+
+// Bootstrapper loading
+document.addEventListener('DOMContentLoaded', loadBillingPage);
+</script>
+{% endblock %}
