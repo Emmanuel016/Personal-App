@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app
+web: gunicorn wsgi:app --timeout 60 --worker-class sync --workers 2 --max-requests 1000 --max-requests-jitter 50

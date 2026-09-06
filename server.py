@@ -160,12 +160,24 @@ class AppConfig:
             MAX_CONTENT_LENGTH=self.MAX_FILE_SIZE,
             SQLALCHEMY_DATABASE_URI=self.DATABASE_URL,
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            SQLALCHEMY_ENGINE_OPTIONS={
+                'pool_pre_ping': True,
+                'pool_recycle': 3600,
+                'pool_size': 10,
+                'max_overflow': 20,
+                'connect_args': {
+                    'connect_timeout': 10,
+                    'sslmode': 'require' if 'render.com' in self.DATABASE_URL or 'heroku' in self.DATABASE_URL else None
+                }
+            },
             MAIL_SERVER=os.environ.get('MAIL_SERVER', 'smtp.gmail.com'),
             MAIL_PORT=int(os.environ.get('MAIL_PORT', 587)),
             MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1'],
             MAIL_USERNAME=os.environ.get('MAIL_USERNAME', ''),
             MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD', ''),
-            MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com')
+            MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
+            MAIL_TIMEOUT=10,
+            MAIL_MAX_EMAILS=10
         )
 
 
@@ -407,10 +419,13 @@ class CommunicationManager:
             </html>"""
             
             msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
+            # Send with timeout to prevent worker timeout
             self.mail.send(msg)
             logger.info(f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}")
         except Exception as e:
             logger.error(f"Error sending invoice email: {str(e)}")
+            # Re-raise the exception so the caller can handle it appropriately
+            raise
 
     def send_reminder_email(self, invoice):
         try:
@@ -1805,18 +1820,23 @@ class EmmaServer:
             invoice = db.session.get(Invoice, invoice_id)
             if not invoice:
                 return jsonify({"error": "Invoice not found"}), 404
-            
+
             payment_methods = os.environ.get('PAYMENT_METHODS', 'PayPal, Bank Transfer')
             late_fee = os.environ.get('LATE_FEE', '5% per month on overdue amount')
             early_discount = os.environ.get('EARLY_DISCOUNT', '2% discount if paid within 10 days')
-            
-            self.comms.send_invoice_email(
-                invoice,
-                payment_methods=payment_methods,
-                late_fee=late_fee,
-                early_discount=early_discount
-            )
-            
+
+            # Send email with error handling
+            try:
+                self.comms.send_invoice_email(
+                    invoice,
+                    payment_methods=payment_methods,
+                    late_fee=late_fee,
+                    early_discount=early_discount
+                )
+            except Exception as email_error:
+                logger.error(f"SMTP error sending invoice email: {str(email_error)}")
+                return jsonify({"error": "Failed to send email due to mail server issues. Please try again later."}), 503
+
             return jsonify({"status": "success"})
         except Exception as e:
             logger.error(f"Error resending invoice email: {str(e)}")
@@ -1865,19 +1885,16 @@ class EmmaServer:
             per_page = request.args.get('per_page', 20, type=int)
             notification_type = request.args.get('type', 'all')
             status_filter = request.args.get('status', 'all')
-            
             query = Notification.query.filter_by(user_id=uid)
             
             if notification_type != 'all':
                 query = query.filter_by(type=notification_type)
-            
             if status_filter == 'unread':
                 query = query.filter_by(read=False)
             elif status_filter == 'read':
                 query = query.filter_by(read=True)
             
             notifications = query.order_by(Notification.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
-            
             notification_list = [{
                 'id': n.id,
                 'type': n.type,
@@ -1887,7 +1904,6 @@ class EmmaServer:
                 'read': n.read,
                 'created_at': n.created_at.isoformat()
             } for n in notifications.items]
-            
             return jsonify({
                 "notifications": notification_list,
                 "total": notifications.total,
