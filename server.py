@@ -177,7 +177,9 @@ class AppConfig:
             MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD', ''),
             MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
             MAIL_TIMEOUT=10,
-            MAIL_MAX_EMAILS=10
+            MAIL_MAX_EMAILS=10,
+            # Use SSL for providers that require it (like SendGrid)
+            MAIL_USE_SSL=os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
         )
 
 
@@ -423,7 +425,13 @@ class CommunicationManager:
             self.mail.send(msg)
             logger.info(f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}")
         except Exception as e:
-            logger.error(f"Error sending invoice email: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error sending invoice email: {error_msg}")
+            # Provide more specific error messages for common issues
+            if "Network is unreachable" in error_msg or "101" in error_msg:
+                logger.error("SMTP network unreachable - check email provider and firewall settings")
+            elif "timeout" in error_msg.lower():
+                logger.error("SMTP connection timeout - check server connectivity")
             # Re-raise the exception so the caller can handle it appropriately
             raise
 
