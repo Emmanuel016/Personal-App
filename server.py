@@ -727,7 +727,8 @@ class EmmaServer:
             return jsonify({"error": f"Couldn't verify login status: {str(e)}"}), 500
 
     def _register_routes(self):
-        self.bind_route("/", self.dashboard, auth='login')
+        self.bind_route("/", self.home_page)
+        self.bind_route("/dashboard", self.dashboard, auth='login')
         self.bind_route("/login", self.login, methods=["GET", "POST"], limit=self.login_limiter)
         self.bind_route("/register", self.register, methods=["GET", "POST"], limit=self.register_limiter)
         self.bind_route("/logout", self.logout)
@@ -900,6 +901,9 @@ class EmmaServer:
             clients = [u for u in users if (u.role or "").lower() == "client"]
             return render_template("index.html", clients=len(clients), projects=Project.query.count())
         return redirect(url_for("client_portal"))
+
+    def home_page(self):
+        return self.services_page()
 
     def login(self):
         if request.method == "GET": return render_template("login.html")

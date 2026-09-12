@@ -9,25 +9,26 @@
     <meta name="description" content="EmmaStudio Command Center - Professional project management dashboard for freelance software development services. Track clients, projects, invoices, and communications in one place.">
     <meta name="keywords" content="project management dashboard, freelance dashboard, client management, project tracking, invoice management, EmmaStudio">
     <meta name="author" content="Emmanuel Ugwu - EmmaStudio">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="EmmaStudio Command Center | Project Management Dashboard">
     <meta property="og:description" content="Professional project management dashboard for freelance software development services.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emma-studio.onrender.com/">
-    <meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta property="og:image:alt" content="EmmaStudio Command Center Dashboard">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="EmmaStudio Command Center | Project Management Dashboard">
     <meta name="twitter:description" content="Professional project management dashboard for freelance software development services.">
-    <meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta name="twitter:image:alt" content="EmmaStudio Command Center Dashboard">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://emma-studio.onrender.com/">
+    <link rel="canonical" href="{{ request.url }}">
     
     <!-- Schema.org Structured Data for SoftwareApplication -->
     <script type="application/ld+json">

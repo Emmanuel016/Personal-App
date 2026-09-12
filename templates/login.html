@@ -4,25 +4,26 @@
 <!-- SEO Meta Tags -->
 <meta name="description" content="Login to EmmaStudio - Access your client portal to manage projects, track orders, and communicate with your freelance software developer.">
 <meta name="keywords" content="login, client portal, EmmaStudio login, project management, freelance services">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
+<meta name="googlebot" content="index, follow">
 
 <!-- Open Graph Meta Tags -->
 <meta property="og:title" content="Login - EmmaStudio Client Portal">
 <meta property="og:description" content="Access your client portal to manage projects and services.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://emma-studio.onrender.com/login">
-<meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
 <meta property="og:image:alt" content="EmmaStudio Login">
 
 <!-- Twitter Card Meta Tags -->
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Login - EmmaStudio Client Portal">
 <meta name="twitter:description" content="Access your client portal to manage projects and services.">
-<meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+<meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
 <meta name="twitter:image:alt" content="EmmaStudio Login">
 
 <!-- Canonical URL -->
-<link rel="canonical" href="https://emma-studio.onrender.com/login">
+<link rel="canonical" href="{{ request.url }}">
 {% endblock %}
 
 {% block content %}

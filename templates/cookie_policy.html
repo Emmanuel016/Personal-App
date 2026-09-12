@@ -15,19 +15,19 @@
     <meta property="og:title" content="Cookie Policy - EMMA.STUDIO">
     <meta property="og:description" content="Learn how we use cookies and similar technologies to provide better services.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emma-studio.onrender.com/cookie-policy">
-    <meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta property="og:image:alt" content="EmmaStudio Cookie Policy">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Cookie Policy - EMMA.STUDIO">
     <meta name="twitter:description" content="Learn how we use cookies and similar technologies to provide better services.">
-    <meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta name="twitter:image:alt" content="EmmaStudio Cookie Policy">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://emma-studio.onrender.com/cookie-policy">
+    <link rel="canonical" href="{{ request.url }}">
     
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">

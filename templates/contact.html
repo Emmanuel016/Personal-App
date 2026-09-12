@@ -3,31 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact EmmaStudio - Get in Touch</title>
+    <title>Contact EmmaStudio | Freelance Python Developer & Web Designer</title>
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Contact EmmaStudio - Get in touch with Emmanuel Ugwu for professional freelance software development services. Python expert, web design, UI/UX, and digital solutions.">
-    <meta name="keywords" content="contact EmmaStudio, Emmanuel Ugwu contact, freelance developer contact, software development services, Python developer, web design services">
+    <meta name="description" content="Contact EmmaStudio to discuss freelance Python development, web design, UI/UX design, and custom digital solutions for businesses, startups, and personal brands.">
+    <meta name="keywords" content="contact EmmaStudio, hire Python developer, web design services, UI/UX design, freelance software development, EmmaStudio contact, Emmanuel Ugwu contact">
     <meta name="author" content="Emmanuel Ugwu - EmmaStudio">
     <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Contact EmmaStudio - Get in Touch">
-    <meta property="og:description" content="Get in touch with Emmanuel Ugwu for professional freelance software development services.">
+    <meta property="og:title" content="Contact EmmaStudio | Freelance Python Developer & Web Designer">
+    <meta property="og:description" content="Discuss your next project with EmmaStudio for custom web development, UI/UX design, and digital transformation services.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emma-studio.onrender.com/contact">
-    <meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta property="og:image:alt" content="EmmaStudio Contact Page">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Contact EmmaStudio - Get in Touch">
-    <meta name="twitter:description" content="Get in touch with Emmanuel Ugwu for professional freelance software development services.">
-    <meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta name="twitter:title" content="Contact EmmaStudio | Freelance Python Developer & Web Designer">
+    <meta name="twitter:description" content="Discuss your next project with EmmaStudio for custom web development, UI/UX design, and digital transformation services.">
+    <meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta name="twitter:image:alt" content="EmmaStudio Contact Page">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://emma-studio.onrender.com/contact">
+    <link rel="canonical" href="{{ request.url }}">
+
+    <!-- Schema.org Structured Data for Contact Page -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      "name": "Contact EmmaStudio",
+      "url": "{{ request.url }}",
+      "description": "Contact EmmaStudio for freelance Python development, web design, UI/UX design, and custom digital solutions.",
+      "about": {
+        "@type": "ProfessionalService",
+        "name": "EmmaStudio Freelance Software Development Services"
+      },
+      "mainEntity": {
+        "@type": "Organization",
+        "name": "EmmaStudio",
+        "email": "support@emmastudio.com"
+      }
+    }
+    </script>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/static/images/emmastudio-logo.svg">

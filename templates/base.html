@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a192f">
     <title>EmmaStudio | AI Core - Professional Freelance Software Development Services</title>
     
     <!-- SEO Meta Tags -->
@@ -15,8 +17,8 @@
     <meta property="og:title" content="EmmaStudio | Professional Freelance Software Development">
     <meta property="og:description" content="Expert freelance software development services specializing in Python, web design, and digital solutions. Transform your ideas into reality.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emma-studio.onrender.com/">
-    <meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta property="og:image:alt" content="EmmaStudio Logo - Professional Freelance Software Development">
     <meta property="og:site_name" content="EmmaStudio">
     <meta property="og:locale" content="en_US">
@@ -25,11 +27,16 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="EmmaStudio | Professional Freelance Software Development">
     <meta name="twitter:description" content="Expert freelance software development services specializing in Python, web design, and digital solutions.">
-    <meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
     <meta name="twitter:image:alt" content="EmmaStudio Logo - Professional Freelance Software Development">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://emma-studio.onrender.com/">
+    <link rel="canonical" href="{{ request.url }}">
+    
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/static/images/emmastudio-logo.svg">

@@ -1,29 +1,32 @@
 {% extends "client_base.html" %}
 
 {% block head %}
+<title>Emmanuel Ugwu | Freelance Python Developer, Web Designer & UI/UX Specialist</title>
 <!-- SEO Meta Tags -->
-<meta name="description" content="Emmanuel Ugwu Portfolio - Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design. View my skills, experience, and services.">
-<meta name="keywords" content="Emmanuel Ugwu, freelance developer, Python expert, web design, UI/UX specialist, graphic design, portfolio, software development">
+<meta name="description" content="Emmanuel Ugwu is a freelance Python developer, web designer, and UI/UX specialist delivering high-converting websites, custom software, and digital design solutions for businesses and startups.">
+<meta name="keywords" content="Emmanuel Ugwu, freelance Python developer, web designer, UI/UX specialist, Python expert, freelance software developer, web development services, graphic design, digital solutions, UK freelance developer">
 <meta name="author" content="Emmanuel Ugwu - EmmaStudio">
 <meta name="robots" content="index, follow">
+<meta name="googlebot" content="index, follow">
 
 <!-- Open Graph Meta Tags -->
-<meta property="og:title" content="Emmanuel Ugwu Portfolio | Professional Software Developer">
-<meta property="og:description" content="Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design. View my skills and services.">
+<meta property="og:title" content="Emmanuel Ugwu | Freelance Python Developer & UI/UX Specialist">
+<meta property="og:description" content="Freelance Python developer, web designer, and UI/UX specialist creating polished digital experiences, custom software, and conversion-focused websites.">
 <meta property="og:type" content="profile">
-<meta property="og:url" content="https://emma-studio.onrender.com/services">
-<meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
-<meta property="og:image:alt" content="Emmanuel Ugwu Portfolio - Professional Software Developer">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
+<meta property="og:image:alt" content="Emmanuel Ugwu - Freelance Python Developer & UI/UX Specialist">
+<meta property="og:site_name" content="EmmaStudio">
 
 <!-- Twitter Card Meta Tags -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Emmanuel Ugwu Portfolio | Professional Software Developer">
-<meta name="twitter:description" content="Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design.">
-<meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
-<meta name="twitter:image:alt" content="Emmanuel Ugwu Portfolio - Professional Software Developer">
+<meta name="twitter:title" content="Emmanuel Ugwu | Freelance Python Developer & UI/UX Specialist">
+<meta name="twitter:description" content="Python developer, web designer, and UI/UX specialist building clean, high-performing digital products and experiences.">
+<meta name="twitter:image" content="{{ request.url_root }}static/images/emmastudio-logo.svg">
+<meta name="twitter:image:alt" content="Emmanuel Ugwu - Freelance Python Developer & UI/UX Specialist">
 
 <!-- Canonical URL -->
-<link rel="canonical" href="https://emma-studio.onrender.com/services">
+<link rel="canonical" href="{{ request.url }}">
 
 <!-- Schema.org Structured Data for Person -->
 <script type="application/ld+json">
@@ -31,11 +34,16 @@
   "@context": "https://schema.org",
   "@type": "Person",
   "name": "Emmanuel Ugwu",
-  "jobTitle": "Freelance Software Developer",
-  "url": "https://emma-studio.onrender.com/services",
+  "jobTitle": "Freelance Python Developer, Web Designer & UI/UX Specialist",
+  "url": "{{ request.url }}",
   "sameAs": [],
-  "knowsAbout": ["Python", "Web Development", "UI/UX Design", "Graphic Design", "Software Engineering"],
-  "description": "Professional freelance software developer specializing in Python, web design, and digital solutions."
+  "homeLocation": {
+    "@type": "Place",
+    "addressCountry": "UK"
+  },
+  "areaServed": ["UK", "Remote"],
+  "knowsAbout": ["Python", "Web Development", "UI/UX Design", "Graphic Design", "Software Engineering", "Custom Web Applications"],
+  "description": "Freelance Python developer, web designer, and UI/UX specialist helping businesses launch polished digital experiences with clean code, strong design, and practical user-focused solutions."
 }
 </script>
 {% endblock %}
@@ -46,8 +54,8 @@
     <div class="quick-nav-header flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 mb-8 border-b border-white/10">
         <div>
             <header>
-                <h1 class="glow-text text-3xl font-bold tracking-wider text-white">EMMANUEL UGWU: PORTFOLIO</h1>
-                <p class="text-cyan-400 text-sm">Introducing my skills and projects in software development and design.</p>
+                <h1 class="glow-text text-3xl font-bold tracking-wider text-white">EMMANUEL UGWU | FREELANCE PYTHON DEVELOPER & UI/UX SPECIALIST</h1>
+                <p class="text-cyan-400 text-sm">Freelance software development, web design, and digital experiences built with clean code, strong design thinking, and clear communication.</p>
             </header>
         </div>
     </div>
