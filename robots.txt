@@ -1,0 +1,36 @@
+# robots.txt for EmmaStudio
+# This file guides search engine crawlers on which pages to index
+
+User-agent: *
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /client/
+Disallow: /invoices
+Disallow: /projects
+Disallow: /clients
+
+# Disallow sensitive endpoints
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/invoices
+Disallow: /api/messages
+Disallow: /api/files
+Disallow: /api/notifications
+
+# Allow public pages
+Allow: /services
+Allow: /contact
+Allow: /cookie-policy
+Allow: /portfolio
+Allow: /about
+
+# Sitemap location
+Sitemap: https://emma-studio.onrender.com/sitemap.xml
+
+# Crawl delay (optional, to prevent overloading the server)
+Crawl-delay: 1

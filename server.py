@@ -148,6 +148,24 @@ class AppConfig:
     def apply_to_app(self, app):
         """Applies dynamic properties to the active Flask application context"""
         app.secret_key = self.SECRET_KEY
+
+        engine_options = {
+            'pool_pre_ping': True,
+            'pool_recycle': 3600,
+            'pool_size': 10,
+            'max_overflow': 20,
+        }
+
+        if self.DATABASE_URL.startswith(("postgresql://", "postgres://")):
+            connect_args = {
+                'connect_timeout': 10,
+            }
+
+            if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws")):
+                connect_args['sslmode'] = 'require'
+
+            engine_options['connect_args'] = connect_args
+
         app.config.update(
             SESSION_COOKIE_SECURE=self.secure_session_cookie,
             SESSION_COOKIE_HTTPONLY=True,
@@ -160,16 +178,7 @@ class AppConfig:
             MAX_CONTENT_LENGTH=self.MAX_FILE_SIZE,
             SQLALCHEMY_DATABASE_URI=self.DATABASE_URL,
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
-            SQLALCHEMY_ENGINE_OPTIONS={
-                'pool_pre_ping': True,
-                'pool_recycle': 3600,
-                'pool_size': 10,
-                'max_overflow': 20,
-                'connect_args': {
-                    'connect_timeout': 10,
-                    'sslmode': 'require' if 'render.com' in self.DATABASE_URL or 'heroku' in self.DATABASE_URL else None
-                }
-            },
+            SQLALCHEMY_ENGINE_OPTIONS=engine_options,
             MAIL_SERVER=os.environ.get('MAIL_SERVER', 'smtp.gmail.com'),
             MAIL_PORT=int(os.environ.get('MAIL_PORT', 587)),
             MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1'],
@@ -737,6 +746,15 @@ class EmmaServer:
         self.bind_route("/client/order", self.order_page, auth='login')
         self.bind_route("/client_feedback", self.client_feedback, auth='login')
         self.bind_route("/cookie-policy", self.cookie_policy)
+        self.bind_route("/contact", self.contact_page)
+        
+        # SEO Files
+        self.bind_route("/robots.txt", self.robots_txt)
+        self.bind_route("/sitemap.xml", self.sitemap_xml)
+        
+        # SEO-friendly redirects
+        self.bind_route("/portfolio", self.portfolio_redirect)
+        self.bind_route("/about", self.about_redirect)
         
         self.bind_route("/api/orders", self.place_order, methods=["POST"], auth='login')
         self.bind_route("/api/profile", self.get_profile)
@@ -1055,6 +1073,28 @@ class EmmaServer:
     def order_page(self): return render_template("client_order.html")
     def client_feedback(self): return render_template("client_feedback.html")
     def cookie_policy(self): return render_template("cookie_policy.html")
+    def contact_page(self): return render_template("contact.html")
+    
+    def robots_txt(self):
+        """Serve robots.txt for SEO"""
+        from flask import send_from_directory
+        return send_from_directory(str(Path(__file__).parent), "robots.txt")
+    
+    def sitemap_xml(self):
+        """Serve sitemap.xml for SEO"""
+        from flask import send_from_directory
+        return send_from_directory(str(Path(__file__).parent), "sitemap.xml")
+    
+    def portfolio_redirect(self):
+        """SEO-friendly redirect for portfolio to services page"""
+        from flask import redirect
+        return redirect("/services", code=301)
+    
+    def about_redirect(self):
+        """SEO-friendly redirect for about to services page"""
+        from flask import redirect
+        return redirect("/services", code=301)
+    
     def get_profile(self): return jsonify({"name": "Emmanuel Ugwu", "headline": "Expert Freelance Software Developer", "services": [{"name": "Application Development"}]})
     def clients_page(self): return render_template("clients.html")
     def projects_page(self): return render_template("projects.html")

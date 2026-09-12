@@ -3,7 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Command Center | EMMA.STUDIO</title>
+    <title>Command Center | EMMA.STUDIO - Project Management Dashboard</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="EmmaStudio Command Center - Professional project management dashboard for freelance software development services. Track clients, projects, invoices, and communications in one place.">
+    <meta name="keywords" content="project management dashboard, freelance dashboard, client management, project tracking, invoice management, EmmaStudio">
+    <meta name="author" content="Emmanuel Ugwu - EmmaStudio">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="EmmaStudio Command Center | Project Management Dashboard">
+    <meta property="og:description" content="Professional project management dashboard for freelance software development services.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://emma-studio.onrender.com/">
+    <meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta property="og:image:alt" content="EmmaStudio Command Center Dashboard">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="EmmaStudio Command Center | Project Management Dashboard">
+    <meta name="twitter:description" content="Professional project management dashboard for freelance software development services.">
+    <meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+    <meta name="twitter:image:alt" content="EmmaStudio Command Center Dashboard">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://emma-studio.onrender.com/">
+    
+    <!-- Schema.org Structured Data for SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "EmmaStudio Command Center",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "GBP"
+      },
+      "description": "Professional project management dashboard for freelance software development services.",
+      "author": {
+        "@type": "Person",
+        "name": "Emmanuel Ugwu"
+      }
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -151,9 +196,9 @@
             <div class="col-span-12 md:col-span-7 lg:col-span-6 flex flex-col lg:min-h-0 h-auto">
                 <div class="glass-panel rounded-xl h-full flex flex-col overflow-hidden min-h-[300px]">
                     <div class="p-3 md:p-4 border-b border-white/5 bg-white/5 flex justify-between items-center flex-shrink-0">
-                        <h3 class="text-xs font-bold tracking-widest flex items-center gap-2">
+                        <h2 class="text-xs font-bold tracking-widest flex items-center gap-2">
                             <i class="fa-solid fa-terminal text-cyan-400"></i> EMMA'S CONTROL ROOM
-                        </h3>
+                        </h2>
                         <button onclick="toggleFeedback()" class="text-xs px-2.5 py-1 bg-purple-600/20 border border-purple-500/30 rounded text-purple-400 hover:bg-purple-600/30 transition-all flex items-center gap-1.5 font-bold">
                             <i class="fa-solid fa-comment-dots"></i> FEEDBACK
                         </button>
@@ -176,7 +221,7 @@
                     
                     <div id="feedbackSection" class="flex-1 overflow-y-auto cyber-scroll hidden min-h-0">
                         <div class="p-3 md:p-4">
-                            <h4 class="text-xs font-bold text-purple-400 mb-3 tracking-widest">CLIENT FEEDBACK</h4>
+                            <h3 class="text-xs font-bold text-purple-400 mb-3 tracking-widest">CLIENT FEEDBACK</h3>
                             <div id="feedbackList" class="space-y-2"></div>
                         </div>
                     </div>
@@ -404,7 +449,7 @@
             const p = localData.projects.find(x => x.id === id);
             if(!p) return;
             document.getElementById('modalContent').innerHTML = `
-                <h2 class="text-sm font-bold text-cyan-400 tracking-widest mb-4">FREELANCE PROJECT ${id}</h2>
+                <h3 class="text-sm font-bold text-cyan-400 tracking-widest mb-4">FREELANCE PROJECT ${id}</h3>
                 <div class="space-y-4">
                     <div>
                         <label class="text-[9px] text-slate-500 uppercase font-semibold">Project Status</label>

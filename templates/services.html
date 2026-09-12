@@ -1,12 +1,54 @@
 {% extends "client_base.html" %}
 
+{% block head %}
+<!-- SEO Meta Tags -->
+<meta name="description" content="Emmanuel Ugwu Portfolio - Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design. View my skills, experience, and services.">
+<meta name="keywords" content="Emmanuel Ugwu, freelance developer, Python expert, web design, UI/UX specialist, graphic design, portfolio, software development">
+<meta name="author" content="Emmanuel Ugwu - EmmaStudio">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph Meta Tags -->
+<meta property="og:title" content="Emmanuel Ugwu Portfolio | Professional Software Developer">
+<meta property="og:description" content="Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design. View my skills and services.">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://emma-studio.onrender.com/services">
+<meta property="og:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+<meta property="og:image:alt" content="Emmanuel Ugwu Portfolio - Professional Software Developer">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emmanuel Ugwu Portfolio | Professional Software Developer">
+<meta name="twitter:description" content="Professional freelance software developer specializing in Python, web design, UI/UX, and graphic design.">
+<meta name="twitter:image" content="https://emma-studio.onrender.com/static/images/emmastudio-logo.svg">
+<meta name="twitter:image:alt" content="Emmanuel Ugwu Portfolio - Professional Software Developer">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="https://emma-studio.onrender.com/services">
+
+<!-- Schema.org Structured Data for Person -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Emmanuel Ugwu",
+  "jobTitle": "Freelance Software Developer",
+  "url": "https://emma-studio.onrender.com/services",
+  "sameAs": [],
+  "knowsAbout": ["Python", "Web Development", "UI/UX Design", "Graphic Design", "Software Engineering"],
+  "description": "Professional freelance software developer specializing in Python, web design, and digital solutions."
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container animate-fadeIn">
     <!-- Top Quick Access Navigation & Portal Header -->
     <div class="quick-nav-header flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 mb-8 border-b border-white/10">
         <div>
-            <h1 class="glow-text text-3xl font-bold tracking-wider text-white">EMMANUEL UGWU: PORTFOLIO</h1>
-            <p class="text-cyan-400 text-sm">Introducing my skills and projects in software development and design.</p>
+            <header>
+                <h1 class="glow-text text-3xl font-bold tracking-wider text-white">EMMANUEL UGWU: PORTFOLIO</h1>
+                <p class="text-cyan-400 text-sm">Introducing my skills and projects in software development and design.</p>
+            </header>
         </div>
     </div>
 

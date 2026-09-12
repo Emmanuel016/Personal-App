@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <!-- Main Homepage -->
+    <url>
+        <loc>https://emma-studio.onrender.com/</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- Services/Portfolio Page -->
+    <url>
+        <loc>https://emma-studio.onrender.com/services</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- Contact Page -->
+    <url>
+        <loc>https://emma-studio.onrender.com/contact</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- SEO-friendly redirects (301 redirects to main pages) -->
+    <url>
+        <loc>https://emma-studio.onrender.com/portfolio</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <url>
+        <loc>https://emma-studio.onrender.com/about</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://emma-studio.onrender.com/contact</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+    <!-- Cookie Policy Page -->
+    <url>
+        <loc>https://emma-studio.onrender.com/cookie-policy</loc>
+        <lastmod>2026-09-12</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+</urlset>
