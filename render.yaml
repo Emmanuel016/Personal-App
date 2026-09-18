@@ -83,6 +83,8 @@ services:
         value: "30"
       - key: INVOICE_REMINDER_SCHEDULE
         value: "7,1,-1,-7"
+      - key: UPLOADS_DIR
+        value: /opt/render/project/uploads
     
     # Health check - use API test endpoint instead of login
     healthCheckPath: /api/test

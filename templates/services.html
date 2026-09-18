@@ -381,6 +381,9 @@
     line-height: 1.4;
     resize: vertical;
     transition: all 0.3s ease;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .large-textarea:focus {
@@ -563,18 +566,22 @@ input[type="number"]:focus {
     justify-content: space-between;
     color: #cbd5e1;
     font-size: 13px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .file-item i {
     color: #00f2fe;
     margin-right: 10px;
+    flex-shrink: 0;
 }
 
 .file-item .file-size {
     color: #64748b;
     font-size: 11px;
-    margin-left: auto;
+    margin-left: 10px;
     margin-right: 10px;
+    flex-shrink: 0;
 }
 
 .file-item .remove-file {
@@ -585,10 +592,39 @@ input[type="number"]:focus {
     transition: background 0.2s;
     z-index: 10;
     position: relative;
+    flex-shrink: 0;
 }
 
 .file-item .remove-file:hover {
     background: rgba(239, 68, 68, 0.2);
+}
+
+/* Text and file overflow protection */
+.service-option span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.choice-list li {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.experience-list li {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* File name overflow protection */
+.file-item .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 </style>
 
@@ -680,9 +716,11 @@ function updateSelectedFilesList() {
     selectedFiles.forEach((file, index) => {
         const item = document.createElement('div');
         item.className = 'file-item';
+        // Truncate long file names
+        const displayName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
         item.innerHTML = `
             <i class="fa-solid fa-file"></i>
-            <span>${file.name}</span>
+            <span class="file-name" title="${file.name}">${displayName}</span>
             <span class="file-size">${formatFileSize(file.size)}</span>
             <span class="remove-file" onclick="removeFile(${index})">
                 <i class="fa-solid fa-xmark"></i>

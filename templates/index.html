@@ -121,6 +121,39 @@
         .custom-placeholder:focus::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
+
+        /* Message overflow protection */
+        .msg-bubble {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            max-width: 75%;
+        }
+
+        .msg-bubble a {
+            word-break: break-all;
+            max-width: 100%;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .msg-bubble a span {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        /* File attachment overflow protection */
+        .file-attachment-link {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -255,7 +288,7 @@
                     <!-- Unified File Preview Template Structure -->
                     <div id="adminFilePreviewContainer" style="display: none;" class="items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs w-fit max-w-full">
                         <i class="fa-solid fa-file-arrow-up"></i>
-                        <span id="adminPreviewFilename" class="font-semibold truncate"></span>
+                        <span id="adminPreviewFilename" class="font-semibold truncate" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                         <button onclick="removeAdminSelectedFile()" class="text-red-400 hover:text-red-300 ml-2 transition-colors">
                             <i class="fa-solid fa-xmark"></i>
                         </button>

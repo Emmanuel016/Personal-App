@@ -193,7 +193,7 @@
                     <div id="filePreviewContainer" style="display: none; padding: 12px 16px 0 16px; align-items: center;">
                         <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #00f2fe; width: fit-content; max-width: 90%;">
                             <i class="fa-solid fa-file-arrow-up"></i>
-                            <span id="previewFilename" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; letter-spacing: 0.5px;"></span>
+                            <span id="previewFilename" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; letter-spacing: 0.5px; max-width: 200px;"></span>
                             <button onclick="removeSelectedFile()" title="Remove file" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; margin-left: 10px; transition: 0.2s;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#ef4444'">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -564,6 +564,38 @@
 .cyber-scroll::-webkit-scrollbar-track { background: transparent; }
 .cyber-scroll::-webkit-scrollbar-thumb { background: #233554; border-radius: 10px; }
 .cyber-scroll::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+
+/* Message overflow protection */
+.msg {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.msg a {
+    word-break: break-all;
+    max-width: 100%;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.msg a span {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* File attachment overflow protection */
+.file-attachment-link {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
 </style>
 
 <script>
@@ -973,11 +1005,12 @@ async function loadMessages(isBackground = true) {
                     const fileSizeKb = (f.file_size / 1024).toFixed(1);
                     filesHtml += `
                         <a href="/api/files/${f.id}/download" 
-                           style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid #00f2fe; border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                           class="file-attachment-link"
+                           style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid #00f2fe; border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                            onmouseover="this.style.background='rgba(0,242,254,0.3)'"
                            onmouseout="this.style.background='rgba(0,242,254,0.15)'">
                             <i class="fa-solid fa-paperclip"></i>
-                            <span>${escapeHtml(f.original_filename)} (${fileSizeKb}KB)</span>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;">${escapeHtml(f.original_filename)}</span> <span style="opacity: 0.7;">(${fileSizeKb}KB)</span>
                         </a>
                     `;
                 });

@@ -5,6 +5,7 @@ import bcrypt
 import logging
 import requests
 import base64
+import threading
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from io import BytesIO
@@ -96,10 +97,24 @@ class AppConfig:
         # Use persistent disk mount path in production (Render/Heroku)
         if self.is_production_env:
             self.UPLOADS_DIR = Path("/opt/render/project/uploads")
+            # Ensure the persistent directory exists and is writable
+            try:
+                self.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+                # Test write permissions
+                test_file = self.UPLOADS_DIR / ".write_test"
+                test_file.touch()
+                test_file.unlink()
+                logger.info(f"Persistent uploads directory verified: {self.UPLOADS_DIR}")
+            except Exception as e:
+                logger.error(f"Failed to access persistent uploads directory: {e}")
+                # Fallback to local directory if persistent disk fails
+                self.UPLOADS_DIR = self.BASE_DIR / 'uploads'
+                self.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+                logger.warning(f"Using fallback uploads directory: {self.UPLOADS_DIR}")
         else:
             self.UPLOADS_DIR = self.BASE_DIR / 'uploads'
         
-        self.PDF_CACHE_DIR = self.BASE_DIR / 'pdf_cache'
+        self.PDF_CACHE_DIR = self.UPLOADS_DIR / 'pdf_cache'
 
         # Persistent secret key loading logic
         SECRET_KEY_FILE = self.BASE_DIR / ".flask_secret_key"
@@ -144,6 +159,10 @@ class AppConfig:
 
         self.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         self.PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Log directory configuration for debugging
+        logger.info(f"Uploads directory configured: {self.UPLOADS_DIR}")
+        logger.info(f"PDF cache directory configured: {self.PDF_CACHE_DIR}")
 
     def apply_to_app(self, app):
         """Applies dynamic properties to the active Flask application context"""
@@ -185,7 +204,7 @@ class AppConfig:
             MAIL_USERNAME=os.environ.get('MAIL_USERNAME', ''),
             MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD', ''),
             MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
-            MAIL_TIMEOUT=30,
+            MAIL_TIMEOUT=60,
             MAIL_MAX_EMAILS=10,
             # Use SSL for providers that require it (Resend uses TLS on port 587)
             MAIL_USE_SSL=os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
@@ -465,22 +484,33 @@ class CommunicationManager:
             </html>"""
             
             msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
-            # Send with timeout to prevent worker timeout
-            self.mail.send(msg)
-            logger.info(f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}")
+            
+            # Send email in background thread to prevent worker timeout
+            def send_email_thread():
+                try:
+                    with self.app.app_context():
+                        self.mail.send(msg)
+                        logger.info(f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}")
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.error(f"Error sending invoice email in background thread: {error_msg}")
+                    if "Network is unreachable" in error_msg or "101" in error_msg:
+                        logger.error("SMTP network unreachable - check email provider and firewall settings")
+                    elif "timeout" in error_msg.lower():
+                        logger.error("SMTP connection timeout - check server connectivity")
+                    elif "authentication" in error_msg.lower() or "535" in error_msg:
+                        logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
+                    elif "Invalid login" in error_msg or "530" in error_msg:
+                        logger.error("SMTP login failed - verify credentials with email provider")
+            
+            thread = threading.Thread(target=send_email_thread)
+            thread.daemon = True
+            thread.start()
+            
+            logger.info(f"Invoice email sending initiated for {client.email} (invoice {invoice.invoice_number})")
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Error sending invoice email: {error_msg}")
-            # Provide more specific error messages for common issues
-            if "Network is unreachable" in error_msg or "101" in error_msg:
-                logger.error("SMTP network unreachable - check email provider and firewall settings")
-            elif "timeout" in error_msg.lower():
-                logger.error("SMTP connection timeout - check server connectivity")
-            elif "authentication" in error_msg.lower() or "535" in error_msg:
-                logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
-            elif "Invalid login" in error_msg or "530" in error_msg:
-                logger.error("SMTP login failed - verify credentials with email provider")
-            # Re-raise the exception so the caller can handle it appropriately
+            logger.error(f"Error initiating invoice email send: {error_msg}")
             raise
 
     def send_reminder_email(self, invoice):
@@ -507,19 +537,32 @@ class CommunicationManager:
                         <p>Dear {client.username},</p>
                         <div style="background:#fff3cd;padding:15px;border-left:4px solid #ffc107;"><strong>Reminder:</strong> Your invoice is {days_text}.</div>
                         <ul><li>Amount Due: £{invoice.amount:.2f}</li></ul>
-                        <p style="text-align:center;"><a href="https://emma-studio5.onrender.com/api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
+                        <p style="text-align:center;"><a href="https://emma-studio.onrender.com/api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
                     </div>
                 </div>
             </body>
             </html>"""
             
             msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
-            self.mail.send(msg)
-            logger.info(f"Reminder email sent to {client.email} for invoice {invoice.invoice_number}")
-            invoice.reminder_sent_at = datetime.now(timezone.utc)
-            self.db.session.commit()
+            
+            # Send email in background thread to prevent worker timeout
+            def send_reminder_thread():
+                try:
+                    with self.app.app_context():
+                        self.mail.send(msg)
+                        logger.info(f"Reminder email sent to {client.email} for invoice {invoice.invoice_number}")
+                        invoice.reminder_sent_at = datetime.now(timezone.utc)
+                        self.db.session.commit()
+                except Exception as e:
+                    logger.error(f"Error sending reminder email in background thread: {str(e)}")
+            
+            thread = threading.Thread(target=send_reminder_thread)
+            thread.daemon = True
+            thread.start()
+            
+            logger.info(f"Reminder email sending initiated for {client.email} (invoice {invoice.invoice_number})")
         except Exception as e:
-            logger.error(f"Error sending reminder email: {str(e)}")
+            logger.error(f"Error initiating reminder email send: {str(e)}")
 
     def send_password_reset_email(self, email, token):
         """Send password reset email with secure token link"""
@@ -542,20 +585,33 @@ class CommunicationManager:
 
             subject = "Password Reset Request - EMMA.STUDIO"
             msg = MailMessage(subject=subject, recipients=[email], html=html_body)
-            self.mail.send(msg)
-            logger.info(f"Password reset email sent to {email}")
+            
+            # Send email in background thread to prevent worker timeout
+            def send_password_reset_thread():
+                try:
+                    with self.app.app_context():
+                        self.mail.send(msg)
+                        logger.info(f"Password reset email sent to {email}")
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.error(f"Error sending password reset email in background thread: {error_msg}")
+                    if "Network is unreachable" in error_msg or "101" in error_msg:
+                        logger.error("SMTP network unreachable - check email provider and firewall settings")
+                    elif "timeout" in error_msg.lower():
+                        logger.error("SMTP connection timeout - check server connectivity")
+                    elif "authentication" in error_msg.lower() or "535" in error_msg:
+                        logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
+                    elif "Invalid login" in error_msg or "530" in error_msg:
+                        logger.error("SMTP login failed - verify credentials with email provider")
+            
+            thread = threading.Thread(target=send_password_reset_thread)
+            thread.daemon = True
+            thread.start()
+            
+            logger.info(f"Password reset email sending initiated for {email}")
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Error sending password reset email: {error_msg}")
-            # Provide more specific error messages for common issues
-            if "Network is unreachable" in error_msg or "101" in error_msg:
-                logger.error("SMTP network unreachable - check email provider and firewall settings")
-            elif "timeout" in error_msg.lower():
-                logger.error("SMTP connection timeout - check server connectivity")
-            elif "authentication" in error_msg.lower() or "535" in error_msg:
-                logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
-            elif "Invalid login" in error_msg or "530" in error_msg:
-                logger.error("SMTP login failed - verify credentials with email provider")
+            logger.error(f"Error initiating password reset email send: {error_msg}")
             raise
 
 
@@ -970,7 +1026,7 @@ class EmmaServer:
         return redirect(url_for("client_portal"))
 
     def home_page(self):
-        return self.services_page()
+        return redirect(url_for("dashboard"))
 
     def login(self):
         if request.method == "GET": return render_template("login.html")

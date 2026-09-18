@@ -676,11 +676,12 @@ async function refreshMessageThread() {
                 const fileSizeKb = (f.file_size / 1024).toFixed(1);
                 filesHtml += `
                     <a href="/api/files/${f.id}/download" 
-                       style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid rgba(0,242,254,0.3); border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                       class="file-attachment-link"
+                       style="padding: 6px 10px; background: rgba(0,242,254,0.15); border: 1px solid rgba(0,242,254,0.3); border-radius: 6px; color: #00f2fe; text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: background 0.2s; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                        onmouseover="this.style.background='rgba(0,242,254,0.3)'"
                        onmouseout="this.style.background='rgba(0,242,254,0.15)'">
                         <i class="fa-solid fa-paperclip"></i>
-                        <span>${escapeHtml(f.original_filename)} (${fileSizeKb}KB)</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;">${escapeHtml(f.original_filename)}</span> <span style="opacity: 0.7;">(${fileSizeKb}KB)</span>
                     </a>
                 `;
             });
@@ -779,7 +780,7 @@ async function sendMessage() {
     tempWrapper.className = "message-wrapper";
     tempWrapper.style.cssText = "display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; align-items: flex-end; opacity: 0.7;";
     
-    const attachmentHtml = adminPendingFile ? `<div style="margin-top: 5px; font-size: 11px; color: rgba(255,255,255,0.7);"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(adminPendingFile.name)}</div>` : '';
+    const attachmentHtml = adminPendingFile ? `<div style="margin-top: 5px; font-size: 11px; color: rgba(255,255,255,0.7); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(adminPendingFile.name)}</div>` : '';
 
     tempWrapper.innerHTML = `
         <div class="msg-bubble shadow-md" style="padding: 10px 16px; border-radius: 18px; max-width: 75%; font-size: 13px; line-height: 1.4; background: linear-gradient(135deg, #0072ff, #00c6ff); color: white; border-bottom-right-radius: 4px;">
