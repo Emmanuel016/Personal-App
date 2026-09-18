@@ -421,11 +421,11 @@ class CommunicationManager:
         try:
             if not self.app.config['MAIL_USERNAME']:
                 logger.warning("Email not configured, skipping invoice email")
-                return
+                return False
             client = db.session.get(User, invoice.client_id)
             if not client or not client.email:
                 logger.warning(f"Client {invoice.client_id} has no email address")
-                return
+                return False
             
             subject = f"Invoice {invoice.invoice_number} - Payment Required"
             pm = payment_methods or os.environ.get('PAYMENT_METHODS', 'PayPal, Bank Transfer')
@@ -508,10 +508,11 @@ class CommunicationManager:
             thread.start()
             
             logger.info(f"Invoice email sending initiated for {client.email} (invoice {invoice.invoice_number})")
+            return True  # Email sending initiated successfully
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Error initiating invoice email send: {error_msg}")
-            raise
+            return False  # Email sending failed
 
     def send_reminder_email(self, invoice):
         try:
@@ -569,7 +570,7 @@ class CommunicationManager:
         try:
             if not self.app.config['MAIL_USERNAME']:
                 logger.warning("Email not configured, skipping password reset email")
-                return
+                return False
 
             # Generate reset link - using the current request's host for proper URL generation
             from flask import request
@@ -609,10 +610,11 @@ class CommunicationManager:
             thread.start()
             
             logger.info(f"Password reset email sending initiated for {email}")
+            return True
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Error initiating password reset email send: {error_msg}")
-            raise
+            return False
 
 
 class FinanceManager:
@@ -903,6 +905,7 @@ class EmmaServer:
         self.bind_route("/api/invoices/generate", self.api_generate_invoice, methods=["POST"], auth='login', admin=True)
         self.bind_route("/api/invoices/<int:invoice_id>/resend", self.api_resend_invoice_email, methods=["POST"], auth='login', admin=True)
         self.bind_route("/api/invoices/<int:invoice_id>/mark-paid", self.api_mark_invoice_paid, methods=["POST"], auth='login', admin=True)
+        self.bind_route("/api/test-email", self.api_test_email, methods=["POST"], auth='login', admin=True)
         
         self.bind_route("/api/notifications", self.get_notifications, auth='login', limit=self.api_limiter)
         self.bind_route("/api/notifications/stats", self.get_notification_stats, auth='login', limit=self.api_limiter)
@@ -1123,7 +1126,10 @@ class EmmaServer:
 
         # Send reset email
         try:
-            self.comms.send_password_reset_email(user.email, token)
+            email_sent = self.comms.send_password_reset_email(user.email, token)
+            if not email_sent:
+                logger.warning(f"Password reset email not sent to {user.email} - email not configured")
+                return render_template("forgot_password.html", error="Email service not configured. Please contact support.")
             return render_template("forgot_password.html", success="If an account with this email exists, a reset link has been sent.")
         except Exception as e:
             logger.error(f"Error sending password reset email: {str(e)}")
@@ -2026,22 +2032,83 @@ class EmmaServer:
             late_fee = os.environ.get('LATE_FEE', '5% per month on overdue amount')
             early_discount = os.environ.get('EARLY_DISCOUNT', '2% discount if paid within 10 days')
 
-            # Send email with error handling
-            try:
-                self.comms.send_invoice_email(
-                    invoice,
-                    payment_methods=payment_methods,
-                    late_fee=late_fee,
-                    early_discount=early_discount
-                )
-            except Exception as email_error:
-                logger.error(f"SMTP error sending invoice email: {str(email_error)}")
-                return jsonify({"error": "Failed to send email due to mail server issues. Please try again later."}), 503
+            # Send email and check if it was initiated successfully
+            email_sent = self.comms.send_invoice_email(
+                invoice,
+                payment_methods=payment_methods,
+                late_fee=late_fee,
+                early_discount=early_discount
+            )
 
-            return jsonify({"status": "success"})
+            if not email_sent:
+                logger.error(f"Failed to initiate invoice email send for invoice {invoice.invoice_number}")
+                return jsonify({"error": "Email not configured or client has no email address. Please check email settings."}), 400
+
+            return jsonify({"status": "success", "message": "Invoice email has been queued for sending"})
         except Exception as e:
             logger.error(f"Error resending invoice email: {str(e)}")
             return jsonify({"error": "Failed to resend invoice email"}), 500
+
+    def api_test_email(self):
+        """Test email configuration by sending a test email"""
+        try:
+            from flask import request
+            data = request.get_json() if request.is_json else {}
+            test_email = data.get('email') or session.get('user_email')
+            
+            if not test_email:
+                return jsonify({"error": "No email address provided"}), 400
+            
+            # Check email configuration
+            if not self.app.config['MAIL_USERNAME']:
+                return jsonify({"error": "Email not configured. Please set MAIL_USERNAME and MAIL_PASSWORD"}), 400
+            
+            # Create test email
+            subject = "Email Configuration Test - EmmaStudio"
+            html_body = """
+            <html>
+            <body>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background: #0a192f; color: #00f2fe; padding: 20px; text-align: center;">
+                        <h1>EmmaStudio</h1>
+                        <p>Email Configuration Test</p>
+                    </div>
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 5px;">
+                        <h2>Test Email</h2>
+                        <p>This is a test email to verify that your email configuration is working correctly.</p>
+                        <p><strong>Email Settings:</strong></p>
+                        <ul>
+                            <li>Server: {self.app.config['MAIL_SERVER']}</li>
+                            <li>Port: {self.app.config['MAIL_PORT']}</li>
+                            <li>Use TLS: {self.app.config['MAIL_USE_TLS']}</li>
+                            <li>Username: {self.app.config['MAIL_USERNAME']}</li>
+                        </ul>
+                        <p>If you received this email, your email configuration is working correctly!</p>
+                    </div>
+                </div>
+            </body>
+            </html>"""
+            
+            msg = MailMessage(subject=subject, recipients=[test_email], html=html_body)
+            
+            # Send email in background thread
+            def send_test_email_thread():
+                try:
+                    with self.app.app_context():
+                        self.mail.send(msg)
+                        logger.info(f"Test email sent successfully to {test_email}")
+                except Exception as e:
+                    logger.error(f"Error sending test email: {str(e)}")
+            
+            thread = threading.Thread(target=send_test_email_thread)
+            thread.daemon = True
+            thread.start()
+            
+            logger.info(f"Test email sending initiated for {test_email}")
+            return jsonify({"status": "success", "message": f"Test email has been queued for sending to {test_email}"})
+        except Exception as e:
+            logger.error(f"Error sending test email: {str(e)}")
+            return jsonify({"error": f"Failed to send test email: {str(e)}"}), 500
 
     def api_mark_invoice_paid(self, invoice_id):
         try:
