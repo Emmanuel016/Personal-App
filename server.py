@@ -284,12 +284,24 @@ class SecurityManager:
                 if request.is_json or request.path.startswith('/api/'):
                     return jsonify({"error": "Unauthorized"}), 401
                 return redirect(url_for("login"))
+            
             user = db.session.get(User, user_id)
             if not user:
+                logger.warning(f"Login check failed: User account {user_id} no longer exists")
                 session.clear()
                 if request.is_json or request.path.startswith('/api/'):
                     return jsonify({"error": "User account no longer exists"}), 401
                 return redirect(url_for("login"))
+            
+            # Verify session role matches database role to prevent account switching
+            session_role = session.get("role", "client").lower()
+            db_role = (user.role or "client").lower()
+            
+            if session_role != db_role:
+                logger.warning(f"Session role mismatch detected for user {user_id}: session={session_role}, db={db_role}. Correcting session.")
+                session["role"] = db_role  # Sync session with database
+            
+            # Update last activity timestamp
             session["last_activity"] = datetime.now(timezone.utc).isoformat()
             return f(*args, **kwargs)
         return decorated_function
@@ -299,12 +311,35 @@ class SecurityManager:
         @wraps(f)
         def decorated_function(*args, **kwargs):
             user_id = session.get("user_id")
-            role = session.get("role")
-            if not user_id or not role or role.lower() != "admin":
-                logger.warning(f"Access Denied: Non-admin {user_id} attempted access to administrative route {request.path}")
+            session_role = session.get("role")
+            
+            if not user_id or not session_role:
+                logger.warning(f"Access Denied: Missing session data for administrative route {request.path}")
+                if request.is_json or request.path.startswith('/api/'):
+                    return jsonify({"error": "Unauthorized"}), 401
+                return redirect(url_for("login"))
+            
+            user = db.session.get(User, user_id)
+            if not user:
+                logger.warning(f"Access Denied: User {user_id} no longer exists for administrative route {request.path}")
+                session.clear()
+                if request.is_json or request.path.startswith('/api/'):
+                    return jsonify({"error": "User account no longer exists"}), 401
+                return redirect(url_for("login"))
+            
+            # Verify session role matches database role
+            db_role = (user.role or "client").lower()
+            if session_role.lower() != db_role:
+                logger.warning(f"Session role mismatch for user {user_id}: session={session_role}, db={db_role}. Correcting session.")
+                session["role"] = db_role  # Sync session with database
+                session_role = db_role
+            
+            if session_role.lower() != "admin":
+                logger.warning(f"Access Denied: Non-admin {user_id} (role: {session_role}) attempted access to administrative route {request.path}")
                 if request.is_json or request.path.startswith('/api/'):
                     return jsonify({"error": "Forbidden"}), 403
                 return redirect(url_for("dashboard"))
+            
             return f(*args, **kwargs)
         return decorated_function
 
@@ -742,7 +777,7 @@ class EmmaServer:
 
     def _register_routes(self):
         self.bind_route("/", self.home_page)
-        self.bind_route("/dashboard", self.dashboard, auth='login')
+        self.bind_route("/dashboard", self.dashboard)
         self.bind_route("/login", self.login, methods=["GET", "POST"], limit=self.login_limiter)
         self.bind_route("/register", self.register, methods=["GET", "POST"], limit=self.register_limiter)
         self.bind_route("/logout", self.logout)
@@ -753,7 +788,7 @@ class EmmaServer:
         self.bind_route("/client/notifications", self.client_notifications, auth='login')
         self.bind_route("/notifications", self.notifications, auth='login', admin=True)
         
-        self.bind_route("/client/dashboard", self.client_portal, auth='login')
+        self.bind_route("/client/dashboard", self.client_portal)
         self.bind_route("/client/register", self.client_register, auth='login')
         self.bind_route("/api/services", self.services_api, limit=self.api_limiter)
         self.bind_route("/services", self.services_page)
@@ -909,8 +944,26 @@ class EmmaServer:
             logger.error(f"Error in password reset token cleanup: {str(e)}")
 
     # --- View Routings ---
+    @SecurityManager.login_required
     def dashboard(self):
-        if session.get("role", "client").lower() == "admin":
+        # Verify the user still exists and has the expected role
+        user_id = session.get("user_id")
+        user = db.session.get(User, user_id)
+        
+        if not user:
+            logger.warning(f"Dashboard access attempted with invalid user_id: {user_id}")
+            session.clear()
+            return redirect(url_for("login"))
+        
+        # Verify the session role matches the database role
+        session_role = session.get("role", "client").lower()
+        db_role = (user.role or "client").lower()
+        
+        if session_role != db_role:
+            logger.warning(f"Session role mismatch for user {user_id}: session={session_role}, db={db_role}. Updating session.")
+            session["role"] = db_role  # Sync session with database
+        
+        if db_role == "admin":
             users = User.query.all()
             clients = [u for u in users if (u.role or "").lower() == "client"]
             return render_template("index.html", clients=len(clients), projects=Project.query.count())
@@ -939,6 +992,7 @@ class EmmaServer:
         session["user_id"] = user.id
         session["role"] = user.role or "client"
         session.permanent = True
+        logger.info(f"User {user.username} (ID: {user.id}, Role: {user.role}) logged in successfully from IP {get_remote_address()}")
         return redirect(url_for("dashboard"))
 
     def register(self):
@@ -966,6 +1020,7 @@ class EmmaServer:
         session["user_id"] = new_user.id
         session["role"] = new_user.role
         session.permanent = True
+        logger.info(f"New user {new_user.username} (ID: {new_user.id}, Role: {new_user.role}) registered and logged in from IP {get_remote_address()}")
         
         for admin in User.query.filter_by(role="admin").all():
             self.comms.send_notification(admin.id, "registration", "New Client Registration", f"New client '{username}' has registered.", {"client_id": new_user.id})
@@ -1083,7 +1138,31 @@ class EmmaServer:
     def invoices(self): return render_template("invoices.html")
     def client_notifications(self): return render_template("client_notification.html")
     def notifications(self): return render_template("notifications.html")
-    def client_portal(self): return render_template("client_portal.html")
+    @SecurityManager.login_required
+    def client_portal(self):
+        # Verify the user still exists and is a client
+        user_id = session.get("user_id")
+        user = db.session.get(User, user_id)
+        
+        if not user:
+            logger.warning(f"Client portal access attempted with invalid user_id: {user_id}")
+            session.clear()
+            return redirect(url_for("login"))
+        
+        # Verify the session role matches the database role
+        session_role = session.get("role", "client").lower()
+        db_role = (user.role or "client").lower()
+        
+        if session_role != db_role:
+            logger.warning(f"Session role mismatch for user {user_id}: session={session_role}, db={db_role}. Updating session.")
+            session["role"] = db_role  # Sync session with database
+        
+        # If user is actually an admin, redirect to admin dashboard
+        if db_role == "admin":
+            logger.info(f"Admin user {user_id} attempted to access client portal, redirecting to dashboard")
+            return redirect(url_for("dashboard"))
+        
+        return render_template("client_portal.html")
     def client_register(self): return render_template("client_register.html")
     def services_api(self): return jsonify([{"id": s.id, "name": s.name, "description": s.description, "price": s.price, "icon": s.icon} for s in Service.query.all()])
     def services_page(self): return render_template("services.html", services=Service.query.all())
