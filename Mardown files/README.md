@@ -213,12 +213,12 @@ http://localhost:8000
 | `PAYPAL_MODE` | Optional | `sandbox` or `live`. Defaults to `sandbox`. |
 | `PAYPAL_CLIENT_ID` | Optional | PayPal REST API client ID. Required for PayPal payments. |
 | `PAYPAL_CLIENT_SECRET` | Optional | PayPal REST API secret. Required for PayPal payments. |
-| `MAIL_SERVER` | Optional | SMTP host. For production (Render), use SendGrid (`smtp.sendgrid.net`). Gmail SMTP may be blocked. |
+| `MAIL_SERVER` | Optional | SMTP host. For production (Render), use Resend (`smtp.resend.com`). Gmail SMTP may be blocked. |
 | `MAIL_PORT` | Optional | SMTP port. Defaults to `587`. Use `2525` for some providers. |
 | `MAIL_USE_TLS` | Optional | Enables TLS. Defaults to `True`. |
 | `MAIL_USE_SSL` | Optional | Enables SSL. Set to `true` for providers requiring SSL. |
-| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. For SendGrid, use `apikey`. |
-| `MAIL_PASSWORD` | Optional | SMTP password or app password. For SendGrid, use your API key. |
+| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. For Resend, use `resend`. |
+| `MAIL_PASSWORD` | Optional | SMTP password or app password. For Resend, use your API key. |
 | `MAIL_DEFAULT_SENDER` | Optional | Default sender email address. Must be verified with your email provider. |
 | `COMPANY_NAME` | Optional | Company name shown on invoices. |
 | `COMPANY_ADDRESS` | Optional | Company address shown on invoices. |

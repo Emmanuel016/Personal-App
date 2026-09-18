@@ -213,12 +213,12 @@ http://localhost:8000
 | `PAYPAL_MODE` | Optional | `sandbox` or `live`. Defaults to `sandbox`. |
 | `PAYPAL_CLIENT_ID` | Optional | PayPal REST API client ID. Required for PayPal payments. |
 | `PAYPAL_CLIENT_SECRET` | Optional | PayPal REST API secret. Required for PayPal payments. |
-| `MAIL_SERVER` | Optional | SMTP host. Defaults to Gmail SMTP. |
+| `MAIL_SERVER` | Optional | SMTP host. Configured for Resend (smtp.resend.com). |
 | `MAIL_PORT` | Optional | SMTP port. Defaults to `587`. |
 | `MAIL_USE_TLS` | Optional | Enables TLS. Defaults to `True`. |
-| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. |
-| `MAIL_PASSWORD` | Optional | SMTP password or app password. |
-| `MAIL_DEFAULT_SENDER` | Optional | Default sender email address. |
+| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. Use `resend` for Resend. |
+| `MAIL_PASSWORD` | Optional | SMTP password or API key. For Resend, use your API key. |
+| `MAIL_DEFAULT_SENDER` | Optional | Default sender email address. Must be verified with Resend. |
 | `COMPANY_NAME` | Optional | Company name shown on invoices. |
 | `COMPANY_ADDRESS` | Optional | Company address shown on invoices. |
 | `COMPANY_CITY` | Optional | Company city shown on invoices. |
@@ -659,10 +659,11 @@ Check:
 
 Check:
 
-- `MAIL_USERNAME` is configured.
-- `MAIL_PASSWORD` is configured.
-- SMTP host and port are correct.
-- Your mail provider allows SMTP/app-password access.
+- `MAIL_USERNAME` is configured (use `resend` for Resend).
+- `MAIL_PASSWORD` is configured (use your Resend API key).
+- `MAIL_DEFAULT_SENDER` is set to a verified email in Resend.
+- SMTP host and port are correct (smtp.resend.com:587).
+- Your Resend account is active and domain is verified.
 
 ### Notifications do not update live
 

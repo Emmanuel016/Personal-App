@@ -39,16 +39,16 @@ services:
         value: "1000"
       - key: MAX_REQUESTS_JITTER
         value: "100"
-      # Email configuration - using SendGrid for production (Gmail SMTP blocked on Render free tier)
-      # To enable emails: Create SendGrid account, get API key, set MAIL_PASSWORD and MAIL_DEFAULT_SENDER
+      # Email configuration - using Resend for production (Gmail SMTP blocked on Render free tier)
+      # To enable emails: Create Resend account, get API key, set MAIL_PASSWORD and MAIL_DEFAULT_SENDER
       - key: MAIL_SERVER
-        value: smtp.sendgrid.net
+        value: smtp.resend.com
       - key: MAIL_PORT
         value: "587"
       - key: MAIL_USE_TLS
         value: "true"
       - key: MAIL_USERNAME
-        value: apikey
+        value: resend
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_DEFAULT_SENDER

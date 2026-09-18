@@ -185,9 +185,9 @@ class AppConfig:
             MAIL_USERNAME=os.environ.get('MAIL_USERNAME', ''),
             MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD', ''),
             MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
-            MAIL_TIMEOUT=10,
+            MAIL_TIMEOUT=30,
             MAIL_MAX_EMAILS=10,
-            # Use SSL for providers that require it (like SendGrid)
+            # Use SSL for providers that require it (Resend uses TLS on port 587)
             MAIL_USE_SSL=os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
         )
 
@@ -441,6 +441,10 @@ class CommunicationManager:
                 logger.error("SMTP network unreachable - check email provider and firewall settings")
             elif "timeout" in error_msg.lower():
                 logger.error("SMTP connection timeout - check server connectivity")
+            elif "authentication" in error_msg.lower() or "535" in error_msg:
+                logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
+            elif "Invalid login" in error_msg or "530" in error_msg:
+                logger.error("SMTP login failed - verify credentials with email provider")
             # Re-raise the exception so the caller can handle it appropriately
             raise
 
@@ -506,7 +510,17 @@ class CommunicationManager:
             self.mail.send(msg)
             logger.info(f"Password reset email sent to {email}")
         except Exception as e:
-            logger.error(f"Error sending password reset email: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error sending password reset email: {error_msg}")
+            # Provide more specific error messages for common issues
+            if "Network is unreachable" in error_msg or "101" in error_msg:
+                logger.error("SMTP network unreachable - check email provider and firewall settings")
+            elif "timeout" in error_msg.lower():
+                logger.error("SMTP connection timeout - check server connectivity")
+            elif "authentication" in error_msg.lower() or "535" in error_msg:
+                logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
+            elif "Invalid login" in error_msg or "530" in error_msg:
+                logger.error("SMTP login failed - verify credentials with email provider")
             raise
 
 
