@@ -213,13 +213,13 @@ http://localhost:8000
 | `PAYPAL_MODE` | Optional | `sandbox` or `live`. Defaults to `sandbox`. |
 | `PAYPAL_CLIENT_ID` | Optional | PayPal REST API client ID. Required for PayPal payments. |
 | `PAYPAL_CLIENT_SECRET` | Optional | PayPal REST API secret. Required for PayPal payments. |
-| `MAIL_SERVER` | Optional | SMTP host. For production (Render), use Resend (`smtp.resend.com`). Gmail SMTP may be blocked. |
+| `MAIL_SERVER` | Optional | SMTP host. For production (Render), use Brevo (`smtp-relay.brevo.com`). Gmail SMTP may be blocked. |
 | `MAIL_PORT` | Optional | SMTP port. Defaults to `587`. Use `2525` for some providers. |
 | `MAIL_USE_TLS` | Optional | Enables TLS. Defaults to `True`. |
 | `MAIL_USE_SSL` | Optional | Enables SSL. Set to `true` for providers requiring SSL. |
-| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. For Resend, use `resend`. |
-| `MAIL_PASSWORD` | Optional | SMTP password or app password. For Resend, use your API key. |
-| `MAIL_DEFAULT_SENDER` | Optional | Default sender email address. Must be verified with your email provider. |
+| `MAIL_USERNAME` | Optional | SMTP username. For Brevo, use your Brevo account email, not a display name. |
+| `MAIL_PASSWORD` | Optional | SMTP password or provider SMTP key. For Brevo, use an SMTP key, not the API key. |
+| `MAIL_DEFAULT_SENDER` | Optional | Sender address authorized by the provider. For Brevo, verify the sender or its domain. |
 | `COMPANY_NAME` | Optional | Company name shown on invoices. |
 | `COMPANY_ADDRESS` | Optional | Company address shown on invoices. |
 | `COMPANY_CITY` | Optional | Company city shown on invoices. |
@@ -660,10 +660,11 @@ Check:
 
 Check:
 
-- `MAIL_USERNAME` is configured.
-- `MAIL_PASSWORD` is configured.
-- SMTP host and port are correct.
-- Your mail provider allows SMTP/app-password access.
+- `MAIL_USERNAME` is your Brevo account email, not `EmmaStudio` or another display name.
+- `MAIL_PASSWORD` is a Brevo SMTP key, not a Brevo API key.
+- `MAIL_DEFAULT_SENDER` is a verified Brevo sender or uses a verified domain.
+- SMTP host and port are `smtp-relay.brevo.com:587` with TLS enabled.
+- Your Brevo account is active and permitted to send transactional email.
 
 ### Notifications do not update live
 

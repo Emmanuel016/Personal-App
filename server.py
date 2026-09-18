@@ -206,7 +206,7 @@ class AppConfig:
             MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
             MAIL_TIMEOUT=60,
             MAIL_MAX_EMAILS=10,
-            # Use SSL for providers that require it (Resend uses TLS on port 587)
+            # Use SSL for providers that require it (Brevo uses TLS on port 587)
             MAIL_USE_SSL=os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
         )
 
@@ -372,6 +372,33 @@ class CommunicationManager:
         self.db = db_instance
         self.config = config
 
+    def _send_email_message(self, message, description):
+        """Send an email and return False when SMTP delivery fails."""
+        if not self.app.config.get('MAIL_USERNAME') or not self.app.config.get('MAIL_PASSWORD'):
+            logger.error("Email is not configured: MAIL_USERNAME and MAIL_PASSWORD are required")
+            return False
+
+        if self.app.config.get('MAIL_USE_TLS') and self.app.config.get('MAIL_USE_SSL'):
+            logger.error("Invalid email configuration: MAIL_USE_TLS and MAIL_USE_SSL cannot both be enabled")
+            return False
+
+        try:
+            with self.app.app_context():
+                self.mail.send(message)
+            logger.info(description)
+            return True
+        except Exception as error:
+            error_text = str(error)
+            smtp_code = getattr(error, 'smtp_code', None)
+            logger.error(f"Error sending email: {error_text}")
+            if smtp_code == 535 or 'authentication' in error_text.lower() or 'invalid login' in error_text.lower():
+                logger.error("SMTP authentication failed: use the provider's SMTP username and SMTP key/password")
+            elif smtp_code == 550 or 'sender' in error_text.lower() or 'recipient' in error_text.lower():
+                logger.error("SMTP rejected the sender or recipient: verify the sender/domain and provider account limits")
+            elif 'timeout' in error_text.lower():
+                logger.error("SMTP connection timed out: check the SMTP host, port, TLS/SSL mode, and network access")
+            return False
+
     def send_notification(self, user_id, notification_type, title, message, data=None, target_role="client"):
         try:
             # Check user notification preferences
@@ -485,30 +512,10 @@ class CommunicationManager:
             
             msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
             
-            # Send email in background thread to prevent worker timeout
-            def send_email_thread():
-                try:
-                    with self.app.app_context():
-                        self.mail.send(msg)
-                        logger.info(f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}")
-                except Exception as e:
-                    error_msg = str(e)
-                    logger.error(f"Error sending invoice email in background thread: {error_msg}")
-                    if "Network is unreachable" in error_msg or "101" in error_msg:
-                        logger.error("SMTP network unreachable - check email provider and firewall settings")
-                    elif "timeout" in error_msg.lower():
-                        logger.error("SMTP connection timeout - check server connectivity")
-                    elif "authentication" in error_msg.lower() or "535" in error_msg:
-                        logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
-                    elif "Invalid login" in error_msg or "530" in error_msg:
-                        logger.error("SMTP login failed - verify credentials with email provider")
-            
-            thread = threading.Thread(target=send_email_thread)
-            thread.daemon = True
-            thread.start()
-            
-            logger.info(f"Invoice email sending initiated for {client.email} (invoice {invoice.invoice_number})")
-            return True  # Email sending initiated successfully
+            return self._send_email_message(
+                msg,
+                f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}"
+            )
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Error initiating invoice email send: {error_msg}")
@@ -546,22 +553,12 @@ class CommunicationManager:
             
             msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
             
-            # Send email in background thread to prevent worker timeout
-            def send_reminder_thread():
-                try:
-                    with self.app.app_context():
-                        self.mail.send(msg)
-                        logger.info(f"Reminder email sent to {client.email} for invoice {invoice.invoice_number}")
-                        invoice.reminder_sent_at = datetime.now(timezone.utc)
-                        self.db.session.commit()
-                except Exception as e:
-                    logger.error(f"Error sending reminder email in background thread: {str(e)}")
-            
-            thread = threading.Thread(target=send_reminder_thread)
-            thread.daemon = True
-            thread.start()
-            
-            logger.info(f"Reminder email sending initiated for {client.email} (invoice {invoice.invoice_number})")
+            if self._send_email_message(
+                msg,
+                f"Reminder email sent to {client.email} for invoice {invoice.invoice_number}"
+            ):
+                invoice.reminder_sent_at = datetime.now(timezone.utc)
+                self.db.session.commit()
         except Exception as e:
             logger.error(f"Error initiating reminder email send: {str(e)}")
 
@@ -587,30 +584,7 @@ class CommunicationManager:
             subject = "Password Reset Request - EMMA.STUDIO"
             msg = MailMessage(subject=subject, recipients=[email], html=html_body)
             
-            # Send email in background thread to prevent worker timeout
-            def send_password_reset_thread():
-                try:
-                    with self.app.app_context():
-                        self.mail.send(msg)
-                        logger.info(f"Password reset email sent to {email}")
-                except Exception as e:
-                    error_msg = str(e)
-                    logger.error(f"Error sending password reset email in background thread: {error_msg}")
-                    if "Network is unreachable" in error_msg or "101" in error_msg:
-                        logger.error("SMTP network unreachable - check email provider and firewall settings")
-                    elif "timeout" in error_msg.lower():
-                        logger.error("SMTP connection timeout - check server connectivity")
-                    elif "authentication" in error_msg.lower() or "535" in error_msg:
-                        logger.error("SMTP authentication failed - check MAIL_USERNAME and MAIL_PASSWORD")
-                    elif "Invalid login" in error_msg or "530" in error_msg:
-                        logger.error("SMTP login failed - verify credentials with email provider")
-            
-            thread = threading.Thread(target=send_password_reset_thread)
-            thread.daemon = True
-            thread.start()
-            
-            logger.info(f"Password reset email sending initiated for {email}")
-            return True
+            return self._send_email_message(msg, f"Password reset email sent to {email}")
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Error initiating password reset email send: {error_msg}")
@@ -1471,13 +1445,63 @@ class EmmaServer:
     def paypal_cancel_payment(self): return jsonify({"status": "cancelled"})
 
     def admin_add_client_record(self):
-        data = request.json or {}
-        username = SecurityManager.sanitize_input(data.get("username", ""))
-        if not SecurityManager.validate_username(username) or User.query.filter(db.func.lower(User.username) == username.lower()).first(): return jsonify({"error": "Invalid or existing username"}), 400
-        new_user = User(username=username, email=SecurityManager.sanitize_input(data.get("email", "N/A")), role=SecurityManager.sanitize_input(data.get("role", "Client")).lower(), type="record_only", date_added=date.today())
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({"status": "success"})
+        try:
+            data = request.json or {}
+            
+            # Validate required fields
+            username = SecurityManager.sanitize_input(data.get("username", ""))
+            if not username:
+                return jsonify({"error": "Username is required"}), 400
+            
+            # Validate username format
+            if not SecurityManager.validate_username(username):
+                return jsonify({"error": "Invalid username format. Username must be 3-50 characters and contain only letters, numbers, hyphens, and underscores"}), 400
+            
+            # Check if username already exists
+            if User.query.filter(db.func.lower(User.username) == username.lower()).first():
+                return jsonify({"error": f"Username '{username}' already exists"}), 400
+            
+            # Validate email if provided
+            email = SecurityManager.sanitize_input(data.get("email", ""))
+            if email and not SecurityManager.validate_email(email):
+                return jsonify({"error": "Invalid email format"}), 400
+            
+            # Check if email already exists
+            if email and User.query.filter(db.func.lower(User.email) == email.lower()).first():
+                return jsonify({"error": f"Email '{email}' already exists"}), 400
+            
+            # Validate role
+            role = SecurityManager.sanitize_input(data.get("role", "Client")).lower()
+            if role not in ["client", "admin"]:
+                return jsonify({"error": "Invalid role. Must be 'client' or 'admin'"}), 400
+            
+            # Validate type
+            user_type = SecurityManager.sanitize_input(data.get("type", "record_only")).lower()
+            if user_type not in ["record_only", "full_access"]:
+                return jsonify({"error": "Invalid type. Must be 'record_only' or 'full_access'"}), 400
+            
+            # Create new user
+            new_user = User(
+                username=username,
+                email=email if email else "N/A",
+                role=role,
+                type=user_type,
+                company=SecurityManager.sanitize_input(data.get("company", "N/A")),
+                phone=SecurityManager.sanitize_input(data.get("phone", "N/A")),
+                notes=SecurityManager.sanitize_input(data.get("notes", "")),
+                date_added=date.today()
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            logger.info(f"New client '{username}' added by admin {session.get('user_id')} from IP {get_remote_address()}")
+            return jsonify({"status": "success", "message": f"Client '{username}' added successfully", "client_id": new_user.id})
+            
+        except Exception as e:
+            logger.error(f"Error adding client: {str(e)}")
+            db.session.rollback()
+            return jsonify({"error": f"Failed to add client: {str(e)}"}), 500
 
     def api_messages(self, target_id):
         uid = session.get("user_id")
@@ -2004,12 +2028,19 @@ class EmmaServer:
                 data={"invoice_id": invoice.id, "invoice_number": invoice.invoice_number, "amount": amount}
             )
             
-            self.comms.send_invoice_email(
+            email_sent = self.comms.send_invoice_email(
                 invoice,
                 payment_methods=payment_methods,
                 late_fee=late_fee,
                 early_discount=early_discount
             )
+
+            if not email_sent:
+                return jsonify({
+                    "error": "Invoice created, but email delivery failed. Check SMTP configuration and server logs.",
+                    "invoice_id": invoice.id,
+                    "invoice_number": invoice.invoice_number
+                }), 502
             
             return jsonify({
                 "status": "success",
@@ -2091,21 +2122,14 @@ class EmmaServer:
             
             msg = MailMessage(subject=subject, recipients=[test_email], html=html_body)
             
-            # Send email in background thread
-            def send_test_email_thread():
-                try:
-                    with self.app.app_context():
-                        self.mail.send(msg)
-                        logger.info(f"Test email sent successfully to {test_email}")
-                except Exception as e:
-                    logger.error(f"Error sending test email: {str(e)}")
-            
-            thread = threading.Thread(target=send_test_email_thread)
-            thread.daemon = True
-            thread.start()
-            
-            logger.info(f"Test email sending initiated for {test_email}")
-            return jsonify({"status": "success", "message": f"Test email has been queued for sending to {test_email}"})
+            email_sent = self.comms._send_email_message(
+                msg,
+                f"Test email sent successfully to {test_email}"
+            )
+            if not email_sent:
+                return jsonify({"error": "Test email delivery failed. Check SMTP configuration and server logs."}), 502
+
+            return jsonify({"status": "success", "message": f"Test email sent successfully to {test_email}"})
         except Exception as e:
             logger.error(f"Error sending test email: {str(e)}")
             return jsonify({"error": f"Failed to send test email: {str(e)}"}), 500

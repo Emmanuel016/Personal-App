@@ -36,19 +36,20 @@ services:
       - key: TIMEOUT
         value: "120"
       - key: MAX_REQUESTS
-        value: "1000"
+        value: "5000"
       - key: MAX_REQUESTS_JITTER
-        value: "100"
-      # Email configuration - using Resend for production (Gmail SMTP blocked on Render free tier)
-      # To enable emails: Create Resend account, get API key, set MAIL_PASSWORD and MAIL_DEFAULT_SENDER
+        value: "500"
+      # Email configuration - using Brevo SMTP for production
+      # Set MAIL_USERNAME to the Brevo account email and MAIL_PASSWORD to an SMTP key.
+      # Brevo SMTP: smtp-relay.brevo.com:587 with TLS
       - key: MAIL_SERVER
-        value: smtp.resend.com
+        value: smtp-relay.brevo.com
       - key: MAIL_PORT
         value: "587"
       - key: MAIL_USE_TLS
         value: "true"
       - key: MAIL_USERNAME
-        value: resend
+        sync: false
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_DEFAULT_SENDER

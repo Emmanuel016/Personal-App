@@ -274,6 +274,22 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function createSuccessStyles() {
+    if (document.getElementById('dynamic-success-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'dynamic-success-styles';
+    style.textContent = `
+        .dynamic-success {
+            position: fixed; top: 20px; right: 20px; background: rgba(16, 185, 129, 0.95); border: 1px solid rgba(16, 185, 129, 0.8);
+            color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000; max-width: 400px; font-family: Arial, sans-serif; animation: slideIn 0.3s ease;
+        }
+        .dynamic-success i { margin-right: 0.5rem; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+}
+
 function createWarningStyles() {
     if (document.getElementById('dynamic-warning-styles')) return;
     const style = document.createElement('style');
@@ -288,6 +304,25 @@ function createWarningStyles() {
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     `;
     document.head.appendChild(style);
+}
+
+function showSuccess(message) {
+    createSuccessStyles();
+    document.querySelectorAll('.dynamic-success').forEach(w => w.remove());
+    
+    const success = document.createElement('div');
+    success.className = 'dynamic-success';
+    success.textContent = message;
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-check-circle';
+    icon.style.marginRight = '0.5rem';
+    success.prepend(icon);
+    document.body.appendChild(success);
+    
+    setTimeout(() => {
+        success.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => success.remove(), 300);
+    }, 5000);
 }
 
 function showWarning(message) {
@@ -863,9 +898,22 @@ async function addClient() {
         return;
     }
 
+    // Additional client-side validation
+    const username = nameInput.value.trim();
+    if (username.length < 3 || username.length > 50) {
+        showWarning("Username must be between 3 and 50 characters");
+        return;
+    }
+    
+    const email = (emailInput && emailInput.value.trim()) || "N/A";
+    if (email !== "N/A" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showWarning("Please enter a valid email address");
+        return;
+    }
+
     const payload = {
-        username: nameInput.value.trim(),
-        email: (emailInput && emailInput.value.trim()) || "N/A",
+        username: username,
+        email: email,
         company: (companyInput && companyInput.value.trim()) || "N/A",
         phone: (phoneInput && phoneInput.value.trim()) || "N/A",
         notes: (notesInput && notesInput.value.trim()) || "",
@@ -880,10 +928,13 @@ async function addClient() {
 
     if (response && response.status === "success") {
         [nameInput, emailInput, companyInput, phoneInput, notesInput].forEach(i => { if(i) i.value = ""; });
-        showWarning(`✓ Client "${payload.username}" added successfully!`);
+        showSuccess(`✓ Client "${payload.username}" added successfully!`);
         await loadClients();
     } else {
-        showWarning("Failed to add client. Please try again.");
+        // Show specific error message from server
+        const errorMessage = response && response.error ? response.error : "Failed to add client. Please try again.";
+        showWarning(errorMessage);
+        console.error("Add client failed:", response);
     }
 }
 
@@ -907,7 +958,7 @@ async function addPayment(projectId) {
     
     if (result && result.status === "success") {
         input.value = "";
-        showWarning(`✓ Payment of £${amount.toFixed(2)} processed successfully!`);
+        showSuccess(`✓ Payment of £${amount.toFixed(2)} processed successfully!`);
         await loadProjects();
         await loadDashboard();
         await loadProjectChart();
@@ -943,7 +994,7 @@ async function addProject() {
         
         if (response.ok) {
             form.reset();
-            showWarning('✓ Project created successfully!');
+            showSuccess('✓ Project created successfully!');
             await loadProjects();
             await loadDashboard();
             await loadProjectChart();

@@ -213,12 +213,12 @@ http://localhost:8000
 | `PAYPAL_MODE` | Optional | `sandbox` or `live`. Defaults to `sandbox`. |
 | `PAYPAL_CLIENT_ID` | Optional | PayPal REST API client ID. Required for PayPal payments. |
 | `PAYPAL_CLIENT_SECRET` | Optional | PayPal REST API secret. Required for PayPal payments. |
-| `MAIL_SERVER` | Optional | SMTP host. Configured for Resend (smtp.resend.com). |
+| `MAIL_SERVER` | Optional | SMTP host. For Brevo, use `smtp-relay.brevo.com`. |
 | `MAIL_PORT` | Optional | SMTP port. Defaults to `587`. |
 | `MAIL_USE_TLS` | Optional | Enables TLS. Defaults to `True`. |
-| `MAIL_USERNAME` | Optional | SMTP username. Required to send invoice emails. Use `resend` for Resend. |
-| `MAIL_PASSWORD` | Optional | SMTP password or API key. For Resend, use your API key. |
-| `MAIL_DEFAULT_SENDER` | Optional | Default sender email address. Must be verified with Resend. |
+| `MAIL_USERNAME` | Optional | SMTP username. For Brevo, use your Brevo account email, not a display name. |
+| `MAIL_PASSWORD` | Optional | SMTP password or provider SMTP key. For Brevo, use an SMTP key, not the API key. |
+| `MAIL_DEFAULT_SENDER` | Optional | Sender address authorized by the provider. For Brevo, verify the sender or its domain. |
 | `COMPANY_NAME` | Optional | Company name shown on invoices. |
 | `COMPANY_ADDRESS` | Optional | Company address shown on invoices. |
 | `COMPANY_CITY` | Optional | Company city shown on invoices. |
@@ -659,11 +659,11 @@ Check:
 
 Check:
 
-- `MAIL_USERNAME` is configured (use `resend` for Resend).
-- `MAIL_PASSWORD` is configured (use your Resend API key).
-- `MAIL_DEFAULT_SENDER` is set to a verified email in Resend.
-- SMTP host and port are correct (smtp.resend.com:587).
-- Your Resend account is active and domain is verified.
+- `MAIL_USERNAME` is your Brevo account email, not `EmmaStudio` or another display name.
+- `MAIL_PASSWORD` is a Brevo SMTP key, not a Brevo API key.
+- `MAIL_DEFAULT_SENDER` is a verified Brevo sender or uses a verified domain.
+- SMTP host and port are `smtp-relay.brevo.com:587` with TLS enabled.
+- Your Brevo account is active and permitted to send transactional email.
 
 ### Notifications do not update live
 
