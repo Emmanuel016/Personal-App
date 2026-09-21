@@ -88,7 +88,7 @@
                         <div class="status-bar-item">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span style="font-size: 11px; color: #8892b0;">Pending</span>
-                                <span style="font-size: 11px; color: #f59e0b; font-weight: bold;" id="pendingCount">0</span>
+                                <span style="font-size: 11px; color: #e0dd12; font-weight: bold;" id="pendingCount">0</span>
                             </div>
                             <div class="progress-container" style="height: 8px;">
                                 <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);" id="pendingBar"></div>
@@ -104,10 +104,10 @@
                         <div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span style="font-size: 11px; color: #8892b0;">Total Project Value</span>
-                                <span style="font-size: 11px; color: white; font-weight: bold;" id="totalProjectValue">£0</span>
+                                <span style="font-size: 11px; color: #5b84cf; font-weight: bold;" id="totalProjectValue">£0</span>
                             </div>
                             <div class="progress-container" style="height: 8px;">
-                                <div class="progress-bar" style="width: 100%; background: rgba(255,255,255,0.1);"></div>
+                                <div class="progress-bar" style="width: 100%; background: rgba(23, 67, 187, 0.411);"></div>
                             </div>
                         </div>
                         <div>
@@ -116,16 +116,16 @@
                                 <span style="font-size: 11px; color: #10b981; font-weight: bold;" id="amountPaidValue">£0</span>
                             </div>
                             <div class="progress-container" style="height: 8px;">
-                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #10b981, #34d399);" id="paymentProgress"></div>
+                                <div class="progress-bar" style="width: 0%; background: rgba(17, 179, 11, 0.856);" id="paymentProgress"></div>
                             </div>
                         </div>
                         <div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span style="font-size: 11px; color: #8892b0;">Remaining Balance</span>
-                                <span style="font-size: 11px; color: #f59e0b; font-weight: bold;" id="remainingBalance">£0</span>
+                                <span style="font-size: 11px; color: #eb1717; font-weight: bold;" id="remainingBalance">£0</span>
                             </div>
                             <div class="progress-container" style="height: 8px;">
-                                <div class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);" id="remainingProgress"></div>
+                                <div class="progress-bar" style="width: 0%; background: rgba(233, 18, 18, 0.8);" id="remainingProgress"></div>
                             </div>
                         </div>
                     </div>
@@ -745,6 +745,7 @@ function updateDashboard(projects) {
 
     const totalProjects = projects.length || 1;
     const remainingBalance = totalValue - totalPaid;
+    //const remainingBalance = Math.abs(remainingBal);
 
     // Update stat cards
     const completedEl = document.getElementById("completedProjects");
@@ -786,7 +787,7 @@ function updateDashboard(projects) {
     const remBar = document.getElementById("remainingProgress");
 
     if (payBar) payBar.style.width = `${paymentProgress}%`;
-    if (remBar) remBar.style.width = `${100 - paymentProgress}%`;
+    if (remBar) remBar.style.width = `${Math.abs(100 - paymentProgress)}%`;
 
     // Update overall progress chart with detailed metrics
     updateProgressChart(completedCount, activeCount, pendingCount);

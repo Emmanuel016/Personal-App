@@ -612,50 +612,39 @@ let pendingAction = null;
 // Initializer
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin notifications page loaded');
-    // Check if user is authenticated
-    fetch('/api/loggedin')
-        .then(response => response.json())
-        .then(data => {
-            console.log('Login status check:', data);
-            if (data.status === 'notloggedin') {
-                console.error('User is not logged in');
-                document.getElementById('notificationsList').innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-lock text-red-400"></i>
-                        <p>You must be logged in to view notifications.</p>
-                        <a href="/login" style="color: #00f2fe; text-decoration: underline;">Login to continue</a>
-                    </div>
-                `;
-                return;
-            }
-            // Proceed with loading notifications
-            loadNotifications();
-            updateStats();
-        })
-        .catch(error => {
-            console.error('Error checking login status:', error);
-            // Try loading anyway in case the check endpoint is the issue
-            loadNotifications();
-            updateStats();
-        });
+    
+    // Proceed directly to loading notifications since the page is already protected by admin_required decorator
+    loadNotifications();
+    updateStats();
 });
 
 function loadNotifications() {
     const typeFilter = document.getElementById('typeFilter').value;
     const statusFilter = document.getElementById('statusFilter').value;
 
+    console.log('=== Starting loadNotifications ===');
     console.log('Loading notifications with filters:', { typeFilter, statusFilter, currentPage, perPage });
+    console.log('Fetch URL:', `/api/admin/notifications?page=${currentPage}&per_page=${perPage}&type=${typeFilter}&status=${statusFilter}`);
 
     fetch(`/api/admin/notifications?page=${currentPage}&per_page=${perPage}&type=${typeFilter}&status=${statusFilter}`)
         .then(response => {
-            console.log('Response status:', response.status);
+            console.log('Response received. Status:', response.status, 'OK:', response.ok);
+            console.log('Response headers:', response.headers);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 401) {
+                    throw new Error('Unauthorized - Please log in as admin');
+                } else if (response.status === 403) {
+                    throw new Error('Forbidden - Admin access required');
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
             }
             return response.json();
         })
         .then(data => {
-            console.log('Notifications data received:', data);
+            console.log('=== Notifications data received ===');
+            console.log('Full data object:', data);
             console.log('Notifications array:', data.notifications);
             console.log('Total pages:', data.pages);
             
@@ -678,28 +667,47 @@ function loadNotifications() {
             currentNotifications = data.notifications;
             totalPages = data.pages;
             console.log('Calling renderNotifications with', data.notifications.length, 'items');
-            renderNotifications(data.notifications);
+            console.log('renderNotifications function exists:', typeof renderNotifications);
+            console.log('renderNotifications function:', renderNotifications);
+            
+            try {
+                renderNotifications(data.notifications);
+                console.log('renderNotifications call completed');
+            } catch (error) {
+                console.error('Error calling renderNotifications:', error);
+                console.error('Error stack:', error.stack);
+            }
+            
             console.log('Calling updatePagination');
             updatePagination(data);
+            console.log('=== loadNotifications completed successfully ===');
         })
         .catch(error => {
-            console.error('Error loading notifications:', error);
+            console.error('=== Error in loadNotifications ===');
+            console.error('Error details:', error);
+            console.error('Error stack:', error.stack);
             document.getElementById('notificationsList').innerHTML = `
                 <div class="empty-state">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <p>Failed to retrieve system alerts logs: ${error.message}</p>
                     <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Make sure you are logged in as an admin user.</p>
+                    <button onclick="location.reload()" class="action-btn" style="margin-top: 12px;">Retry</button>
                 </div>
             `;
         });
 }
 
 function renderNotifications(notifications) {
+    console.log('=== renderNotifications START ===');
+    console.log('Input notifications:', notifications);
+    console.log('Input type:', typeof notifications);
+    console.log('Input length:', notifications ? notifications.length : 'N/A');
+    
     try {
         const container = document.getElementById('notificationsList');
         
-        console.log('renderNotifications called with:', notifications);
         console.log('Container element:', container);
+        console.log('Container exists:', !!container);
         
         if (!container) {
             console.error('Container element not found!');
@@ -714,17 +722,26 @@ function renderNotifications(notifications) {
                     <p>No new notification logs found.</p>
                 </div>
             `;
+            console.log('Empty state set, container HTML:', container.innerHTML);
             return;
         }
         
-        console.log('Rendering', notifications.length, 'notifications');
+        console.log('Starting to render', notifications.length, 'notifications');
+        console.log('First notification sample:', notifications[0]);
         
-        container.innerHTML = notifications.map(notification => {
-            console.log('Processing notification:', notification);
+        const htmlContent = notifications.map((notification, index) => {
+            console.log(`Processing notification ${index}:`, notification);
+            const typeClass = notification.type || 'system_alert';
+            const title = notification.title || 'No title';
+            const message = notification.message || 'No message';
+            const createdAt = notification.created_at || new Date().toISOString();
+            const targetRole = notification.target_role || 'client';
+            const isRead = notification.read || false;
+            
             return `
-            <div class="notification-item ${notification.read ? '' : 'unread'}" onclick="viewNotification(${notification.id})">
+            <div class="notification-item ${isRead ? '' : 'unread'}" onclick="viewNotification(${notification.id})">
                 <div class="notification-header">
-                    <span class="notification-type ${notification.type}">${formatType(notification.type)}</span>
+                    <span class="notification-type ${typeClass}">${formatType(typeClass)}</span>
                     <div class="notification-actions">
                         <button class="notification-action-btn" onclick="event.stopPropagation(); markAsRead(${notification.id})">
                             <i class="fa-solid fa-check"></i> Mark Read
@@ -734,20 +751,28 @@ function renderNotifications(notifications) {
                         </button>
                     </div>
                 </div>
-                <div class="notification-title">${escapeHtml(notification.title)}</div>
-                <div class="notification-message">${escapeHtml(notification.message)}</div>
+                <div class="notification-title">${escapeHtml(title)}</div>
+                <div class="notification-message">${escapeHtml(message)}</div>
                 <div class="notification-footer">
-                    <span class="notification-time">${formatTime(notification.created_at)}</span>
-                    <span style="color: #64748b; font-size: 10px; margin-left: 8px;">${notification.target_role === 'admin' ? '👤 Admin' : '👤 Client'}</span>
-                    ${notification.read ? '<span style="color: #10b981; font-size: 11px; font-weight:600;"><i class="fa-solid fa-check"></i> Read</span>' : '<span style="color: #00f2fe; font-size: 11px; font-weight:600;"><i class="fa-solid fa-circle"></i> Unread</span>'}
+                    <span class="notification-time">${formatTime(createdAt)}</span>
+                    <span style="color: #64748b; font-size: 10px; margin-left: 8px;">${targetRole === 'admin' ? '👤 Admin' : '👤 Client'}</span>
+                    ${isRead ? '<span style="color: #10b981; font-size: 11px; font-weight:600;"><i class="fa-solid fa-check"></i> Read</span>' : '<span style="color: #00f2fe; font-size: 11px; font-weight:600;"><i class="fa-solid fa-circle"></i> Unread</span>'}
                 </div>
             </div>
         `;
         }).join('');
         
-        console.log('Render complete, container HTML length:', container.innerHTML.length);
+        console.log('Generated HTML content length:', htmlContent.length);
+        console.log('HTML content preview:', htmlContent.substring(0, 200));
+        console.log('Setting container innerHTML...');
+        container.innerHTML = htmlContent;
+        console.log('Container innerHTML set successfully');
+        console.log('Container current HTML length:', container.innerHTML.length);
+        console.log('=== renderNotifications END ===');
     } catch (error) {
-        console.error('Error in renderNotifications:', error);
+        console.error('=== Error in renderNotifications ===');
+        console.error('Error:', error);
+        console.error('Error stack:', error.stack);
         const container = document.getElementById('notificationsList');
         if (container) {
             container.innerHTML = `
@@ -797,20 +822,30 @@ function filterNotifications() {
 }
 
 function updateStats() {
+    console.log('=== Starting updateStats ===');
     fetch('/api/admin/notifications/stats')
         .then(response => {
+            console.log('Stats response status:', response.status, 'OK:', response.ok);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 401) {
+                    throw new Error('Unauthorized - Please log in as admin');
+                } else if (response.status === 403) {
+                    throw new Error('Forbidden - Admin access required');
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
             }
             return response.json();
         })
         .then(data => {
+            console.log('Stats data received:', data);
             if (data.error) {
                 throw new Error(data.error);
             }
             document.getElementById('totalNotifications').textContent = data.total;
             document.getElementById('unreadNotifications').textContent = data.unread;
             document.getElementById('readNotifications').textContent = data.read;
+            console.log('Stats updated successfully');
         })
         .catch(error => {
             console.error('Error loading stats:', error);

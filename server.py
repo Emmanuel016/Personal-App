@@ -509,9 +509,9 @@ class CommunicationManager:
                 </div>
             </body>
             </html>"""
-            
-            msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
-            
+
+            msg = MailMessage(subject=subject, recipients=[client.email], html=html_body, sender=self.app.config['MAIL_DEFAULT_SENDER'])
+
             return self._send_email_message(
                 msg,
                 f"Invoice email sent to {client.email} for invoice {invoice.invoice_number}"
@@ -550,9 +550,9 @@ class CommunicationManager:
                 </div>
             </body>
             </html>"""
-            
-            msg = MailMessage(subject=subject, recipients=[client.email], html=html_body)
-            
+
+            msg = MailMessage(subject=subject, recipients=[client.email], html=html_body, sender=self.app.config['MAIL_DEFAULT_SENDER'])
+
             if self._send_email_message(
                 msg,
                 f"Reminder email sent to {client.email} for invoice {invoice.invoice_number}"
@@ -582,8 +582,8 @@ class CommunicationManager:
                                         support_email=support_email)
 
             subject = "Password Reset Request - EMMA.STUDIO"
-            msg = MailMessage(subject=subject, recipients=[email], html=html_body)
-            
+            msg = MailMessage(subject=subject, recipients=[email], html=html_body, sender=self.app.config['MAIL_DEFAULT_SENDER'])
+
             return self._send_email_message(msg, f"Password reset email sent to {email}")
         except Exception as e:
             error_msg = str(e)
@@ -1522,8 +1522,8 @@ class EmmaServer:
                 if file and SecurityManager.allowed_file(file.filename):
                     sf = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{secure_filename(file.filename)}"
                     try:
-                        file.save(str(self.config.UPLOADS_DIR / sf))
-                        db.session.add(FileAttachment(message_id=msg.id, client_id=target_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=file.content_length, mime_type=file.content_type, uploaded_by_role=msg.from_role))
+                        file_content = file.read()
+                        db.session.add(FileAttachment(message_id=msg.id, client_id=target_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=len(file_content), mime_type=file.content_type, uploaded_by_role=msg.from_role, file_content=file_content))
                         uploaded_files.append(secure_filename(file.filename))
                     except Exception as e:
                         self.logger.error(f"Failed to save file: {str(e)}")
@@ -1563,11 +1563,10 @@ class EmmaServer:
         if not file or not SecurityManager.allowed_file(file.filename): return jsonify({"error": "Invalid file"}), 400
         
         sf = f"{secrets.token_hex(16)}_{secure_filename(file.filename)}"
-        file_path = SecurityManager.get_safe_file_path(sf, self.config.UPLOADS_DIR)
         
         try:
-            file.save(str(file_path))
-            attachment = FileAttachment(message_id=message_id, client_id=msg.client_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=file.content_length, mime_type=file.content_type, uploaded_by_role="admin" if session.get("role").lower() == "admin" else "client")
+            file_content = file.read()
+            attachment = FileAttachment(message_id=message_id, client_id=msg.client_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=len(file_content), mime_type=file.content_type, uploaded_by_role="admin" if session.get("role").lower() == "admin" else "client", file_content=file_content)
             db.session.add(attachment)
             db.session.commit()
             return jsonify({"status": "success", "attachment": {"id": attachment.id, "original_filename": attachment.original_filename, "file_size": attachment.file_size, "download_url": f"/api/files/{attachment.id}/download"}})
@@ -1588,14 +1587,12 @@ class EmmaServer:
                 logger.warning(warning_msg)
                 return jsonify({"error": "Access denied"}), 403
             
-            file_path = SecurityManager.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
+            if not attachment.file_content:
+                logger.error(f"File content not found in database for file {file_id}")
+                return jsonify({"error": "File content not found"}), 404
             
-            if not file_path.exists():
-                logger.error(f"File not found on disk: {file_path} (stored_filename: {attachment.stored_filename})")
-                return jsonify({"error": "File not found on server"}), 404
-            
-            logger.info(f"Downloading file {file_id}: {attachment.original_filename} from {file_path}")
-            return send_file(file_path, as_attachment=True, download_name=attachment.original_filename)
+            logger.info(f"Downloading file {file_id}: {attachment.original_filename} from database")
+            return send_file(BytesIO(attachment.file_content), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type)
         except Exception as e:
             logger.error(f"Error downloading file {file_id}: {str(e)}")
             return jsonify({"error": "Download failed"}), 500
@@ -1607,8 +1604,6 @@ class EmmaServer:
     def delete_file(self, file_id):
         attachment = db.session.get(FileAttachment, file_id)
         if not attachment or (session.get("role").lower() != "admin" and attachment.client_id != session.get("user_id")): return jsonify({"error": "Denied"}), 403
-        filepath = SecurityManager.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
-        if filepath.exists(): filepath.unlink()
         db.session.delete(attachment)
         db.session.commit()
         return jsonify({"status": "success"})
@@ -2119,9 +2114,9 @@ class EmmaServer:
                 </div>
             </body>
             </html>"""
-            
-            msg = MailMessage(subject=subject, recipients=[test_email], html=html_body)
-            
+
+            msg = MailMessage(subject=subject, recipients=[test_email], html=html_body, sender=self.app.config['MAIL_DEFAULT_SENDER'])
+
             email_sent = self.comms._send_email_message(
                 msg,
                 f"Test email sent successfully to {test_email}"

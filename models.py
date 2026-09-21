@@ -87,6 +87,7 @@ class FileAttachment(db.Model):
     mime_type = db.Column(db.String(100))
     uploaded_by_role = db.Column(db.String(50))
     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    file_content = db.Column(db.LargeBinary, nullable=True)
 
 class Notification(db.Model):
     __tablename__ = "notifications"
