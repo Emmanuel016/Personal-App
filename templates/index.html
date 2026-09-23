@@ -113,6 +113,113 @@
         .feedback-comment { color: #cbd5e1; font-size: 0.7rem; line-height: 1.4; margin-top: 0.25rem; }
         .feedback-date { color: #64748b; font-size: 0.625rem; text-transform: uppercase; }
 
+        /* Contact Messages Styles */
+        .contact-message-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-message-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+        
+        .contact-message-item.pending {
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .contact-message-item.responded {
+            border-left: 3px solid #10b981;
+        }
+        
+        .contact-message-item.archived {
+            border-left: 3px solid #64748b;
+            opacity: 0.6;
+        }
+        
+        .contact-message-sender {
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .contact-message-email {
+            color: #94a3b8;
+            font-size: 0.65rem;
+        }
+        
+        .contact-message-subject {
+            color: #06b6d4;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+        
+        .contact-message-text {
+            color: #cbd5e1;
+            font-size: 0.7rem;
+            line-height: 1.4;
+            margin-top: 0.5rem;
+        }
+        
+        .contact-message-date {
+            color: #64748b;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+        
+        .contact-message-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .contact-message-btn {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid;
+        }
+        
+        .contact-message-btn.respond {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        
+        .contact-message-btn.respond:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        
+        .contact-message-btn.archive {
+            background: rgba(100, 116, 139, 0.2);
+            border-color: rgba(100, 116, 139, 0.3);
+            color: #94a3b8;
+        }
+        
+        .contact-message-btn.archive:hover {
+            background: rgba(100, 116, 139, 0.3);
+        }
+        
+        .contact-message-btn.delete {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        .contact-message-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
         .custom-placeholder::placeholder {
             color: rgba(255, 255, 255, 0.5);
             font-family: 'JetBrains Mono', monospace;
@@ -153,6 +260,27 @@
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
+        }
+
+        /* Modal Response Dialog */
+        .modal-response-textarea {
+            width: 100%;
+            min-height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            padding: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .modal-response-textarea:focus {
+            border-color: #00f2fe;
+            background: rgba(0, 0, 0, 0.5);
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.05);
         }
     </style>
 </head>
@@ -236,6 +364,9 @@
                         <button onclick="toggleFeedback()" class="text-xs px-2.5 py-1 bg-purple-600/20 border border-purple-500/30 rounded text-purple-400 hover:bg-purple-600/30 transition-all flex items-center gap-1.5 font-bold">
                             <i class="fa-solid fa-comment-dots"></i> FEEDBACK
                         </button>
+                        <button onclick="toggleContactMessages()" class="text-xs px-2.5 py-1 bg-cyan-600/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-600/30 transition-all flex items-center gap-1.5 font-bold">
+                            <i class="fa-solid fa-envelope"></i> MESSAGES
+                        </button>
                     </div>
                     
                     <div id="projectsSection" class="flex-1 overflow-x-auto lg:overflow-y-auto cyber-scroll min-h-0">
@@ -257,6 +388,13 @@
                         <div class="p-3 md:p-4">
                             <h3 class="text-xs font-bold text-purple-400 mb-3 tracking-widest">CLIENT FEEDBACK</h3>
                             <div id="feedbackList" class="space-y-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="contactMessagesSection" class="flex-1 overflow-y-auto cyber-scroll hidden min-h-0">
+                        <div class="p-3 md:p-4">
+                            <h3 class="text-xs font-bold text-cyan-400 mb-3 tracking-widest">CONTACT MESSAGES</h3>
+                            <div id="contactMessagesList" class="space-y-2"></div>
                         </div>
                     </div>
                 </div>
@@ -326,7 +464,7 @@
     <script src="/static/app.js"></script>
     <script>
         let healthChart = null;
-        let localData = { clients: [], projects: [], feedbacks: [] };
+        let localData = { clients: [], projects: [], feedbacks: [], contactMessages: [] };
         let previousSyncHash = "";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -550,13 +688,33 @@
         function toggleFeedback() {
             const projectsSection = document.getElementById('projectsSection');
             const feedbackSection = document.getElementById('feedbackSection');
+            const contactMessagesSection = document.getElementById('contactMessagesSection');
             
             if (feedbackSection.classList.contains('hidden')) {
                 projectsSection.classList.add('hidden');
+                contactMessagesSection.classList.add('hidden');
                 feedbackSection.classList.remove('hidden');
                 sysLog('FEEDBACK_PANEL_ACTIVATED');
             } else {
                 feedbackSection.classList.add('hidden');
+                projectsSection.classList.remove('hidden');
+                sysLog('PROJECTS_PANEL_ACTIVATED');
+            }
+        }
+        
+        function toggleContactMessages() {
+            const projectsSection = document.getElementById('projectsSection');
+            const feedbackSection = document.getElementById('feedbackSection');
+            const contactMessagesSection = document.getElementById('contactMessagesSection');
+            
+            if (contactMessagesSection.classList.contains('hidden')) {
+                projectsSection.classList.add('hidden');
+                feedbackSection.classList.add('hidden');
+                contactMessagesSection.classList.remove('hidden');
+                sysLog('CONTACT_MESSAGES_PANEL_ACTIVATED');
+                loadContactMessages();
+            } else {
+                contactMessagesSection.classList.add('hidden');
                 projectsSection.classList.remove('hidden');
                 sysLog('PROJECTS_PANEL_ACTIVATED');
             }
@@ -596,6 +754,171 @@
                     </div>
                 `;
             }).join('');
+        }
+        
+        async function loadContactMessages() {
+            try {
+                const response = await api('/api/contact-messages');
+                if (response && response.data) {
+                    renderContactMessages(response.data);
+                }
+            } catch (error) {
+                sysLog('Error loading contact messages: ' + error.message, true);
+            }
+        }
+        
+        function renderContactMessages(messages) {
+            const contactMessagesList = document.getElementById('contactMessagesList');
+            if (!contactMessagesList) return;
+            
+            if (messages.length === 0) {
+                contactMessagesList.innerHTML = `
+                    <div class="text-center py-8 opacity-50">
+                        <i class="fa-solid fa-envelope-open text-2xl mb-2 text-slate-600"></i>
+                        <p class="text-xs text-slate-500 uppercase tracking-widest">No contact messages received</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            contactMessagesList.innerHTML = messages.map(msg => {
+                const date = new Date(msg.created_at).toLocaleDateString();
+                const statusClass = msg.status.toLowerCase();
+                const statusLabel = msg.status.charAt(0).toUpperCase() + msg.status.slice(1);
+                
+                return `
+                    <div class="contact-message-item ${statusClass}">
+                        <div class="flex justify-between items-start mb-2 gap-2">
+                            <div class="flex-1 min-w-0">
+                                <div class="contact-message-sender">${msg.name}</div>
+                                <div class="contact-message-email">${msg.email}</div>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase ${statusClass === 'pending' ? 'text-amber-400' : statusClass === 'responded' ? 'text-emerald-400' : 'text-slate-400'}">${statusLabel}</span>
+                        </div>
+                        <div class="contact-message-subject">${msg.subject}</div>
+                        ${msg.service ? `<div class="text-[10px] text-slate-500 mt-1">Service: ${msg.service}</div>` : ''}
+                        <div class="contact-message-text">${msg.message}</div>
+                        <div class="contact-message-date">${date}</div>
+                        ${msg.admin_response ? `
+                            <div class="mt-3 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded">
+                                <div class="text-[10px] font-bold text-emerald-400 mb-1">ADMIN RESPONSE:</div>
+                                <div class="text-xs text-slate-300">${msg.admin_response}</div>
+                            </div>
+                        ` : ''}
+                        <div class="contact-message-actions">
+                            ${msg.status !== 'responded' ? `
+                                <button onclick="respondToMessage(${msg.id})" class="contact-message-btn respond">
+                                    <i class="fa-solid fa-reply mr-1"></i> Respond
+                                </button>
+                            ` : ''}
+                            ${msg.status !== 'archived' ? `
+                                <button onclick="archiveMessage(${msg.id})" class="contact-message-btn archive">
+                                    <i class="fa-solid fa-archive mr-1"></i> Archive
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteMessage(${msg.id})" class="contact-message-btn delete">
+                                <i class="fa-solid fa-trash mr-1"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function respondToMessage(messageId) {
+            document.getElementById('modalContent').innerHTML = `
+                <h3 class="text-sm font-bold text-cyan-400 tracking-widest mb-4">RESPOND TO MESSAGE</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[9px] text-slate-500 uppercase font-semibold">Your Response</label>
+                        <textarea id="responseText" class="modal-response-textarea mt-1" placeholder="Type your response here..."></textarea>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="submitResponse(${messageId})" class="flex-1 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-xs tracking-widest transition-all">
+                            SEND RESPONSE
+                        </button>
+                        <button onclick="closeModal()" class="flex-1 text-xs text-slate-500 hover:text-white uppercase font-bold py-3 rounded-lg border border-white/10 hover:border-white/30 transition-all">
+                            CANCEL
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+        
+        async function submitResponse(messageId) {
+            const responseText = document.getElementById('responseText').value;
+            if (!responseText.trim()) {
+                alert('Please enter a response');
+                return;
+            }
+            
+            try {
+                const result = await api('/api/contact-messages', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: messageId,
+                        action: 'respond',
+                        response: responseText
+                    })
+                });
+                
+                if (result && result.status === 'success') {
+                    sysLog('Response sent successfully');
+                    closeModal();
+                    loadContactMessages();
+                } else {
+                    sysLog('Failed to send response', true);
+                }
+            } catch (error) {
+                sysLog('Error sending response: ' + error.message, true);
+            }
+        }
+        
+        async function archiveMessage(messageId) {
+            if (!confirm('Are you sure you want to archive this message?')) return;
+            
+            try {
+                const result = await api('/api/contact-messages', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: messageId,
+                        action: 'archive'
+                    })
+                });
+                
+                if (result && result.status === 'success') {
+                    sysLog('Message archived successfully');
+                    loadContactMessages();
+                } else {
+                    sysLog('Failed to archive message', true);
+                }
+            } catch (error) {
+                sysLog('Error archiving message: ' + error.message, true);
+            }
+        }
+        
+        async function deleteMessage(messageId) {
+            if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) return;
+            
+            try {
+                const result = await api('/api/contact-messages', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: messageId })
+                });
+                
+                if (result && result.status === 'success') {
+                    sysLog('Message deleted successfully');
+                    loadContactMessages();
+                } else {
+                    sysLog('Failed to delete message', true);
+                }
+            } catch (error) {
+                sysLog('Error deleting message: ' + error.message, true);
+            }
         }
         
         function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }

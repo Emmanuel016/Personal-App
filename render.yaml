@@ -3,7 +3,7 @@ services:
     name: personal-app
     env: python
     plan: free
-    pythonVersion: 3.11.4
+    pythonVersion: 3.12.0
     
     # Build command - run build script
     buildCommand: bash build.sh
@@ -16,7 +16,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG
-        value: "false"
+        value: "False"
       - key: FLASK_AUTO_RELOAD
         value: "false"
       - key: FLASK_SECRET_KEY
@@ -24,7 +24,7 @@ services:
       - key: HTTPS_ONLY
         value: "true"
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: "https://emma-studio.onrender.com"
       - key: DATABASE_URL
         fromDatabase:
           name: personal-app-db
@@ -32,9 +32,9 @@ services:
       - key: PORT
         value: "5000"
       - key: WORKERS
-        value: "2"
+        value: "1"
       - key: TIMEOUT
-        value: "12"
+        value: "120"
       - key: MAX_REQUESTS
         value: "5000"
       - key: MAX_REQUESTS_JITTER

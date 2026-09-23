@@ -160,6 +160,26 @@ class PasswordResetToken(db.Model):
         db.Index('idx_reset_token_expires', 'expires_at'),
     )
 
+class ContactMessage(db.Model):
+    __tablename__ = "contact_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    service = db.Column(db.String(100))
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), default="pending")  # pending, responded, archived
+    admin_response = db.Column(db.Text)
+    responded_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.Index('idx_contact_status', 'status'),
+        db.Index('idx_contact_created', 'created_at'),
+    )
+
 class DatabaseManager:
     """OOP encapsulation for Database initializations"""
     @staticmethod

@@ -182,6 +182,16 @@
             filter: brightness(1.1);
         }
 
+        .error-message {
+            color: #ff007f;
+            background: rgba(255, 0, 127, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 0, 127, 0.2);
+        }
+
         /* Contact Info Cards */
         .contact-card {
             background: rgba(255, 255, 255, 0.02);
@@ -225,129 +235,188 @@
             transform: translateY(-2px);
             box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
         }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 768px) {
+            .contact-card {
+                padding: 16px;
+            }
+            
+            .contact-icon {
+                font-size: 24px;
+                margin-bottom: 12px;
+            }
+            
+            .glass-panel {
+                border-radius: 12px;
+            }
+            
+            /* Improve touch targets */
+            button, a, input, select, textarea {
+                min-height: 44px;
+            }
+            
+            /* Mobile menu animation */
+            #mobileMenu {
+                transition: all 0.3s ease;
+            }
+            
+            /* Prevent horizontal scroll on mobile */
+            body {
+                overflow-x: hidden;
+            }
+        }
+
+        /* Small mobile devices */
+        @media (max-width: 480px) {
+            .glow-text {
+                font-size: 1.75rem;
+            }
+            
+            .contact-card {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
     <!-- Navigation Header -->
-    <nav class="relative flex justify-between items-center px-6 md:px-12 py-4 bg-[#0a192f]/90 backdrop-blur-md border-b border-white/5 z-[100] flex-shrink-0">
-        <div class="brand font-extrabold text-xl tracking-widest text-[#00f2fe] flex items-center gap-2 font-mono" style="font-family: 'Rajdhani', sans-serif;">
-            <img src="/static/images/emmastudio-logo.svg" alt="EmmaStudio - Professional Freelance Software Development Services Logo" class="h-8 w-auto transition-all duration-300 hover:scale-105">
-            <span>EMMA.STUDIO</span>
+    <nav class="relative flex justify-between items-center px-4 md:px-12 py-3 md:py-4 bg-[#0a192f]/90 backdrop-blur-md border-b border-white/5 z-[100] flex-shrink-0">
+        <div class="brand font-extrabold text-lg md:text-xl tracking-widest text-[#00f2fe] flex items-center gap-2 font-mono" style="font-family: 'Rajdhani', sans-serif;">
+            <img src="/static/images/emmastudio-logo.svg" alt="EmmaStudio - Professional Freelance Software Development Services Logo" class="h-7 md:h-8 w-auto transition-all duration-300 hover:scale-105">
+            <span class="hidden sm:inline">EMMA.STUDIO</span>
+            <span class="sm:hidden">EMMA</span>
         </div>
         
-        <div class="hidden md:flex gap-8">
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="md:hidden text-[#00f2fe] text-2xl p-2 focus:outline-none">
+            <i class="fa-solid fa-bars" id="menuIcon"></i>
+        </button>
+        
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex gap-6 md:gap-8">
             <a href="/" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider transition-colors">Home</a>
-            <a href="/" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider transition-colors">Portfolio</a>
+            <a href="/services" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider transition-colors">Portfolio</a>
             <a href="/contact" class="text-[#00f2fe] text-xs uppercase font-bold tracking-wider transition-colors">Contact</a>
             <a href="/login" class="text-slate-400 hover:text-[#00f2fe] text-xs uppercase font-bold tracking-wider transition-colors">Login</a>
+        </div>
+        
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="hidden absolute top-full left-0 right-0 bg-[#0a192f]/95 backdrop-blur-md border-b border-white/5 md:hidden">
+            <div class="flex flex-col py-4 px-4 space-y-3">
+                <a href="/" class="text-slate-400 hover:text-[#00f2fe] text-sm uppercase font-bold tracking-wider transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Home</a>
+                <a href="/services" class="text-slate-400 hover:text-[#00f2fe] text-sm uppercase font-bold tracking-wider transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Portfolio</a>
+                <a href="/contact" class="text-[#00f2fe] text-sm uppercase font-bold tracking-wider transition-colors py-2 px-3 rounded-lg bg-white/5">Contact</a>
+                <a href="/login" class="text-slate-400 hover:text-[#00f2fe] text-sm uppercase font-bold tracking-wider transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Login</a>
+            </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow py-12 px-4 md:px-8 max-w-7xl mx-auto w-full">
+    <main class="flex-grow py-8 md:py-12 px-4 md:px-8 max-w-7xl mx-auto w-full">
         <div class="container animate-fadeIn">
             <!-- Header Section -->
-            <div class="text-center mb-12">
-                <h1 class="glow-text text-4xl md:text-5xl font-bold mb-4">GET IN TOUCH</h1>
-                <p class="text-cyan-400 text-lg">Let's discuss your next project and bring your ideas to life</p>
+            <div class="text-center mb-8 md:mb-12">
+                <h1 class="glow-text text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4">GET IN TOUCH</h1>
+                <p class="text-cyan-400 text-base md:text-lg px-2">Let's discuss your next project and bring your ideas to life</p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 <!-- Contact Information -->
-                <div class="space-y-6">
-                    <div class="glass-panel p-8">
-                        <h2 class="text-2xl font-bold text-white mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">CONTACT INFORMATION</h2>
+                <div class="space-y-4 md:space-y-6">
+                    <div class="glass-panel p-5 md:p-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">CONTACT INFORMATION</h2>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="contact-card">
-                                <i class="fa-solid fa-envelope contact-icon"></i>
-                                <h3 class="text-white font-semibold mb-2">Email</h3>
-                                <p class="text-slate-400 text-sm">support@emmastudio.com</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                            <div class="contact-card p-4 md:p-6">
+                                <i class="fa-solid fa-envelope contact-icon text-2xl md:text-3xl"></i>
+                                <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Email</h3>
+                                <p class="text-slate-400 text-xs md:text-sm break-all">support@emmastudio.com</p>
                             </div>
                             
-                            <div class="contact-card">
-                                <i class="fa-solid fa-clock contact-icon"></i>
-                                <h3 class="text-white font-semibold mb-2">Response Time</h3>
-                                <p class="text-slate-400 text-sm">Within 24 hours</p>
+                            <div class="contact-card p-4 md:p-6">
+                                <i class="fa-solid fa-clock contact-icon text-2xl md:text-3xl"></i>
+                                <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Response Time</h3>
+                                <p class="text-slate-400 text-xs md:text-sm">Within 24 hours</p>
                             </div>
                             
-                            <div class="contact-card">
-                                <i class="fa-solid fa-location-dot contact-icon"></i>
-                                <h3 class="text-white font-semibold mb-2">Location</h3>
-                                <p class="text-slate-400 text-sm">United Kingdom</p>
+                            <div class="contact-card p-4 md:p-6">
+                                <i class="fa-solid fa-location-dot contact-icon text-2xl md:text-3xl"></i>
+                                <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Location</h3>
+                                <p class="text-slate-400 text-xs md:text-sm">United Kingdom</p>
                             </div>
                             
-                            <div class="contact-card">
-                                <i class="fa-solid fa-code contact-icon"></i>
-                                <h3 class="text-white font-semibold mb-2">Services</h3>
-                                <p class="text-slate-400 text-sm">Python, Web Design, UI/UX</p>
+                            <div class="contact-card p-4 md:p-6">
+                                <i class="fa-solid fa-code contact-icon text-2xl md:text-3xl"></i>
+                                <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Services</h3>
+                                <p class="text-slate-400 text-xs md:text-sm">Python, Web Design, UI/UX</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Social Media Links -->
-                    <div class="glass-panel p-8">
-                        <h2 class="text-2xl font-bold text-white mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">CONNECT WITH ME</h2>
-                        <div class="flex gap-4 justify-center">
-                            <a href="#" class="social-link" aria-label="GitHub">
+                    <div class="glass-panel p-5 md:p-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">CONNECT WITH ME</h2>
+                        <div class="flex gap-3 md:gap-4 justify-center">
+                            <a href="#" class="social-link w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl" aria-label="GitHub">
                                 <i class="fa-brands fa-github"></i>
                             </a>
-                            <a href="#" class="social-link" aria-label="LinkedIn">
+                            <a href="#" class="social-link w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl" aria-label="LinkedIn">
                                 <i class="fa-brands fa-linkedin"></i>
                             </a>
-                            <a href="#" class="social-link" aria-label="Twitter">
+                            <a href="#" class="social-link w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl" aria-label="Twitter">
                                 <i class="fa-brands fa-twitter"></i>
                             </a>
-                            <a href="#" class="social-link" aria-label="Instagram">
+                            <a href="#" class="social-link w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl" aria-label="Instagram">
                                 <i class="fa-brands fa-instagram"></i>
                             </a>
                         </div>
                     </div>
 
                     <!-- Business Hours -->
-                    <div class="glass-panel p-8">
-                        <h2 class="text-2xl font-bold text-white mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">BUSINESS HOURS</h2>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-400">Monday - Friday</span>
-                                <span class="text-white font-semibold">9:00 AM - 6:00 PM</span>
+                    <div class="glass-panel p-5 md:p-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">BUSINESS HOURS</h2>
+                        <div class="space-y-2 md:space-y-3">
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-400 text-xs md:text-sm">Monday - Friday</span>
+                                <span class="text-white font-semibold text-xs md:text-sm">9:00 AM - 6:00 PM</span>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-400">Saturday</span>
-                                <span class="text-white font-semibold">10:00 AM - 4:00 PM</span>
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-400 text-xs md:text-sm">Saturday</span>
+                                <span class="text-white font-semibold text-xs md:text-sm">10:00 AM - 4:00 PM</span>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-400">Sunday</span>
-                                <span class="text-white font-semibold">Closed</span>
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-400 text-xs md:text-sm">Sunday</span>
+                                <span class="text-white font-semibold text-xs md:text-sm">Closed</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Contact Form -->
-                <div class="glass-panel p-8">
-                    <h2 class="text-2xl font-bold text-white mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">SEND A MESSAGE</h2>
+                <div class="glass-panel p-5 md:p-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">SEND A MESSAGE</h2>
                     
-                    <form id="contactForm" class="space-y-6">
+                    <form id="contactForm" method="POST" action="/contact" class="space-y-4 md:space-y-6">
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Your Name</label>
-                            <input type="text" id="name" name="name" required class="form-input" placeholder="John Doe">
+                            <input type="text" id="name" name="name" required class="form-input text-sm md:text-base py-3 md:py-4" placeholder="John Doe">
                         </div>
                         
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Email Address</label>
-                            <input type="email" id="email" name="email" required class="form-input" placeholder="john@example.com">
+                            <input type="email" id="email" name="email" required class="form-input text-sm md:text-base py-3 md:py-4" placeholder="john@example.com">
                         </div>
                         
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Subject</label>
-                            <input type="text" id="subject" name="subject" required class="form-input" placeholder="Project Inquiry">
+                            <input type="text" id="subject" name="subject" required class="form-input text-sm md:text-base py-3 md:py-4" placeholder="Project Inquiry">
                         </div>
                         
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Service Interest</label>
-                            <select id="service" name="service" class="form-input">
+                            <select id="service" name="service" class="form-input text-sm md:text-base py-3 md:py-4">
                                 <option value="">Select a service...</option>
                                 <option value="web-development">Web Development</option>
                                 <option value="python-development">Python Development</option>
@@ -359,38 +428,48 @@
                         
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Your Message</label>
-                            <textarea id="message" name="message" rows="6" required class="form-input" placeholder="Tell me about your project..."></textarea>
+                            <textarea id="message" name="message" rows="5 md:rows-6" required class="form-input text-sm md:text-base py-3 md:py-4" placeholder="Tell me about your project..."></textarea>
                         </div>
                         
-                        <button type="submit" class="btn-primary w-full py-4 text-base font-bold flex items-center justify-center gap-3">
+                        <button type="submit" class="btn-primary w-full py-3 md:py-4 text-sm md:text-base font-bold flex items-center justify-center gap-2 md:gap-3">
                             <i class="fa-solid fa-paper-plane"></i> SEND MESSAGE
                         </button>
                     </form>
                     
-                    <div id="formSuccess" class="hidden mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-center">
-                        <i class="fa-solid fa-check-circle mr-2"></i> Thank you! Your message has been sent successfully.
+                    <div id="formSuccess" class="hidden mt-4 md:mt-6 p-3 md:p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-center text-sm md:text-base">
+                        <i class="fa-solid fa-check-circle mr-2"></i> <span id="successMessage">Thank you! Your message has been sent successfully.</span>
                     </div>
+                    
+                    <div id="formError" class="hidden mt-4 md:mt-6 p-3 md:p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-center text-sm md:text-base">
+                        <i class="fa-solid fa-exclamation-circle mr-2"></i> <span id="errorMessage">An error occurred. Please try again.</span>
+                    </div>
+                    
+                    <!-- Hidden data attributes for server-side messages -->
+                    <div id="flashMessages" 
+                         data-success="{{ success | e if success else '' }}" 
+                         data-error="{{ error | e if error else '' }}" 
+                         style="display: none;"></div>
                 </div>
             </div>
 
             <!-- Additional Information -->
-            <div class="glass-panel p-8 mt-8">
-                <h2 class="text-2xl font-bold text-white mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">WHY CHOOSE EMMASTUDIO?</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="text-center">
-                        <i class="fa-solid fa-rocket text-3xl text-cyan-400 mb-4"></i>
-                        <h3 class="text-white font-semibold mb-2">Fast Delivery</h3>
-                        <p class="text-slate-400 text-sm">Quick turnaround times without compromising quality</p>
+            <div class="glass-panel p-5 md:p-8 mt-6 md:mt-8">
+                <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 tracking-wider" style="font-family: 'Rajdhani', sans-serif;">WHY CHOOSE EMMASTUDIO?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    <div class="text-center p-3 md:p-4">
+                        <i class="fa-solid fa-rocket text-2xl md:text-3xl text-cyan-400 mb-3 md:mb-4"></i>
+                        <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Fast Delivery</h3>
+                        <p class="text-slate-400 text-xs md:text-sm">Quick turnaround times without compromising quality</p>
                     </div>
-                    <div class="text-center">
-                        <i class="fa-solid fa-shield-halved text-3xl text-cyan-400 mb-4"></i>
-                        <h3 class="text-white font-semibold mb-2">Secure & Reliable</h3>
-                        <p class="text-slate-400 text-sm">Professional approach with secure payment options</p>
+                    <div class="text-center p-3 md:p-4">
+                        <i class="fa-solid fa-shield-halved text-2xl md:text-3xl text-cyan-400 mb-3 md:mb-4"></i>
+                        <h3 class="text-white font-semibold mb-2 text-sm md:text-base">Secure & Reliable</h3>
+                        <p class="text-slate-400 text-xs md:text-sm">Professional approach with secure payment options</p>
                     </div>
-                    <div class="text-center">
-                        <i class="fa-solid fa-headset text-3xl text-cyan-400 mb-4"></i>
-                        <h3 class="text-white font-semibold mb-2">24/7 Support</h3>
-                        <p class="text-slate-400 text-sm">Responsive communication throughout your project</p>
+                    <div class="text-center p-3 md:p-4">
+                        <i class="fa-solid fa-headset text-2xl md:text-3xl text-cyan-400 mb-3 md:mb-4"></i>
+                        <h3 class="text-white font-semibold mb-2 text-sm md:text-base">24/7 Support</h3>
+                        <p class="text-slate-400 text-xs md:text-sm">Responsive communication throughout your project</p>
                     </div>
                 </div>
             </div>
@@ -398,50 +477,68 @@
     </main>
 
     <!-- Footer -->
-    <footer class="py-6 text-center border-t border-white/5 bg-[#020617] text-xs text-slate-500 font-mono tracking-wider mt-auto flex-shrink-0">
-        &copy; 2026 EMMA.STUDIO. ALL RIGHTS SECURED.
+    <footer class="py-4 md:py-6 text-center border-t border-white/5 bg-[#020617] text-xs text-slate-500 font-mono tracking-wider mt-auto flex-shrink-0 px-4">
+        <div class="max-w-7xl mx-auto">
+            <p class="mb-2">&copy; 2026 EMMA.STUDIO. ALL RIGHTS SECURED.</p>
+            <div class="flex justify-center gap-4 md:hidden">
+                <a href="/" class="text-slate-500 hover:text-[#00f2fe] text-xs transition-colors">Home</a>
+                <a href="/contact" class="text-slate-500 hover:text-[#00f2fe] text-xs transition-colors">Contact</a>
+            </div>
+        </div>
     </footer>
 
     <script>
-        // Contact Form Handling
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Get form data
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                subject: document.getElementById('subject').value,
-                service: document.getElementById('service').value,
-                message: document.getElementById('message').value
-            };
-            
-            // Simple validation
-            if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-                alert('Please fill in all required fields.');
-                return;
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const menuIcon = document.getElementById('menuIcon');
+        
+        mobileMenuBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+            if (mobileMenu.classList.contains('hidden')) {
+                menuIcon.classList.remove('fa-xmark');
+                menuIcon.classList.add('fa-bars');
+            } else {
+                menuIcon.classList.remove('fa-bars');
+                menuIcon.classList.add('fa-xmark');
             }
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.email)) {
-                alert('Please enter a valid email address.');
-                return;
+        });
+        
+        // Close mobile menu when clicking on a link
+        const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+        mobileMenuLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileMenu.classList.add('hidden');
+                menuIcon.classList.remove('fa-xmark');
+                menuIcon.classList.add('fa-bars');
+            });
+        });
+        
+        // Check for success/error messages from server
+        window.showFlashMessage = function(type, message) {
+            if (type === 'success') {
+                document.getElementById('formSuccess').classList.remove('hidden');
+                document.getElementById('successMessage').textContent = message;
+            } else if (type === 'error') {
+                document.getElementById('formError').classList.remove('hidden');
+                document.getElementById('errorMessage').textContent = message;
             }
-            
-            // Simulate form submission (replace with actual API call)
-            console.log('Form submitted:', formData);
-            
-            // Show success message
-            document.getElementById('formSuccess').classList.remove('hidden');
-            
-            // Reset form
-            this.reset();
-            
-            // Hide success message after 5 seconds
-            setTimeout(() => {
-                document.getElementById('formSuccess').classList.add('hidden');
-            }, 5000);
+        };
+        
+        // Show messages if they exist from server-side rendering
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashData = document.getElementById('flashMessages');
+            if (flashData) {
+                const successMsg = flashData.getAttribute('data-success');
+                const errorMsg = flashData.getAttribute('data-error');
+                
+                if (successMsg) {
+                    showFlashMessage('success', successMsg);
+                }
+                if (errorMsg) {
+                    showFlashMessage('error', errorMsg);
+                }
+            }
         });
     </script>
 </body>

@@ -31,7 +31,7 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import text
 
 # Import Database Schema & Manager
-from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, DatabaseManager
+from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, ContactMessage, DatabaseManager
 
 # Load .env configurations
 load_dotenv()
@@ -43,7 +43,14 @@ try:
     
     # Configure root logger for better control
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    # Use INFO level in production, DEBUG in development
+    is_prod = (
+        os.environ.get("FLASK_ENV", "").lower() == "production" or
+        os.environ.get("ENV", "").lower() == "production" or
+        os.environ.get("PRODUCTION", "").lower() in ("1", "true", "yes")
+    )
+    log_level = logging.INFO if is_prod else logging.DEBUG
+    root_logger.setLevel(log_level)
     
     # Enhanced format with timestamp, module, and level
     log_format = logging.Formatter("%(levelname)s | %(message)s")
@@ -57,7 +64,7 @@ try:
         backupCount=5,
         encoding='utf-8'
     )
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(log_level)
     file_handler.setFormatter(log_format)
     
     # Stream handler for console (INFO level to reduce noise)
@@ -72,7 +79,7 @@ try:
     
     # Create module-specific logger
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(log_level)
     
 except Exception as e:
     # Fallback to basic logging if directory creation fails
@@ -565,8 +572,8 @@ class CommunicationManager:
                             <p><strong>Early Payment Discount:</strong> {ed}</p>
                         </div>
                         <p>To pay this invoice, click the button below:</p>
-                        <p style="text-align: center;"><a href="https://emma-studio.onrender.com/api/invoices/{invoice.id}/pdf" class="button">Download PDF</a></p>
-                        <p style="text-align: center;"><a href="https://emma-studio.onrender.com/api/invoices/{invoice.id}/pay" class="button">Pay Now</a></p>
+                        <p style="text-align: center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pdf" class="button">Download PDF</a></p>
+                        <p style="text-align: center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pay" class="button">Pay Now</a></p>
                     </div>
                 </div>
             </body>
@@ -607,7 +614,7 @@ class CommunicationManager:
                         <p>Dear {client.username},</p>
                         <div style="background:#fff3cd;padding:15px;border-left:4px solid #ffc107;"><strong>Reminder:</strong> Your invoice is {days_text}.</div>
                         <ul><li>Amount Due: £{invoice.amount:.2f}</li></ul>
-                        <p style="text-align:center;"><a href="https://emma-studio.onrender.com/api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
+                        <p style="text-align:center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
                     </div>
                 </div>
             </body>
@@ -814,9 +821,9 @@ class EmmaServer:
         db.init_app(self.app)
         self.mail = Mail(self.app)
         # Production-safe Socket.IO configuration.
-        # Keep the application on Python threads (not eventlet/gevent) and allow
-        # WebSocket with polling fallback. Gunicorn runs a SINGLE process with
-        # multiple threads so Socket.IO session state remains in one process.
+        # Use polling only for development to avoid WebSocket issues with Werkzeug dev server
+        # In production with Gunicorn, WebSocket can be enabled
+        use_websocket = self.config.is_production_env
         self.socketio = SocketIO(
             self.app,
             cors_allowed_origins=self.config.allowed_origins,
@@ -826,8 +833,8 @@ class EmmaServer:
             always_connect=False,
             engineio_logger=False,
             socketio_logger=False,
-            transports=['websocket', 'polling'],
-            allow_upgrades=True
+            transports=['polling'] if not use_websocket else ['websocket', 'polling'],
+            allow_upgrades=use_websocket
         )
         self.limiter = Limiter(
             app=self.app, key_func=get_remote_address, default_limits=["100000 per hour"], storage_uri="memory://"
@@ -897,7 +904,7 @@ class EmmaServer:
         self.bind_route("/client/order", self.order_page, auth='login')
         self.bind_route("/client_feedback", self.client_feedback, auth='login')
         self.bind_route("/cookie-policy", self.cookie_policy)
-        self.bind_route("/contact", self.contact_page)
+        self.bind_route("/contact", self.contact_page, methods=['GET', 'POST'])
         
         # SEO Files
         self.bind_route("/robots.txt", self.robots_txt)
@@ -935,6 +942,7 @@ class EmmaServer:
         
         self.bind_route("/api/messages/<int:target_id>", self.api_messages, methods=["GET", "POST"], auth='login')
         self.bind_route("/api/feedback", self.api_feedback, methods=["GET", "POST"])
+        self.bind_route("/api/contact-messages", self.api_contact_messages, methods=["GET", "POST", "PATCH", "DELETE"], auth='login', admin=True)
         
         self.bind_route("/api/messages/<int:message_id>/upload", self.upload_file, methods=["POST"], auth='login')
         self.bind_route("/api/files/<int:file_id>/download", self.download_file, auth='login')
@@ -1293,7 +1301,43 @@ class EmmaServer:
     def order_page(self): return render_template("client_order.html")
     def client_feedback(self): return render_template("client_feedback.html")
     def cookie_policy(self): return render_template("cookie_policy.html")
-    def contact_page(self): return render_template("contact.html")
+    def contact_page(self): 
+        success = None
+        error = None
+        
+        if request.method == 'POST':
+            try:
+                name = request.form.get('name')
+                email = request.form.get('email')
+                subject = request.form.get('subject')
+                service = request.form.get('service')
+                message = request.form.get('message')
+                
+                if not name or not email or not subject or not message:
+                    error = "Please fill in all required fields."
+                elif not SecurityManager.validate_email(email):
+                    error = "Please enter a valid email address."
+                else:
+                    # Create contact message
+                    contact_msg = ContactMessage(
+                        name=name,
+                        email=email,
+                        subject=subject,
+                        service=service,
+                        message=message,
+                        status="pending"
+                    )
+                    db.session.add(contact_msg)
+                    db.session.commit()
+                    
+                    logger.info(f"Contact message received from {name} ({email})")
+                    success = "Thank you! Your message has been sent successfully."
+                    
+            except Exception as e:
+                logger.error(f"Error processing contact form: {str(e)}")
+                error = "An error occurred. Please try again."
+        
+        return render_template("contact.html", success=success, error=error)
     
     def robots_txt(self):
         """Serve robots.txt for SEO"""
@@ -1650,6 +1694,97 @@ class EmmaServer:
         db.session.add(feedback)
         db.session.commit()
         return jsonify({"status": "success"})
+
+    def api_contact_messages(self):
+        if request.method == "GET":
+            messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+            return jsonify({
+                "data": [{
+                    "id": m.id,
+                    "name": m.name,
+                    "email": m.email,
+                    "subject": m.subject,
+                    "service": m.service,
+                    "message": m.message,
+                    "status": m.status,
+                    "admin_response": m.admin_response,
+                    "responded_at": m.responded_at.isoformat() if m.responded_at else None,
+                    "created_at": m.created_at.isoformat()
+                } for m in messages]
+            })
+        
+        elif request.method == "POST":
+            data = request.json or {}
+            message_id = data.get("id")
+            if not message_id:
+                return jsonify({"error": "Message ID required"}), 400
+            
+            contact_msg = db.session.get(ContactMessage, message_id)
+            if not contact_msg:
+                return jsonify({"error": "Message not found"}), 404
+            
+            action = data.get("action")
+            if action == "respond":
+                response = data.get("response")
+                if not response:
+                    return jsonify({"error": "Response text required"}), 400
+                
+                contact_msg.admin_response = SecurityManager.sanitize_input(response)
+                contact_msg.status = "responded"
+                contact_msg.responded_at = datetime.now(timezone.utc)
+                db.session.commit()
+                
+                # Send email response if email is configured
+                try:
+                    if self.comms.app.config.get('MAIL_API_KEY') or self.comms.app.config.get('MAIL_USERNAME'):
+                        subject = f"Re: {contact_msg.subject}"
+                        html_body = f"""
+                        <html>
+                        <body>
+                            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+                                <div style="background:#0a192f;color:#00f2fe;padding:20px;text-align:center;"><h1>EmmaStudio</h1><p>Response to your inquiry</p></div>
+                                <div style="background:#f5f5f5;padding:20px;">
+                                    <h2>Original Message:</h2>
+                                    <p><strong>From:</strong> {contact_msg.name}</p>
+                                    <p><strong>Subject:</strong> {contact_msg.subject}</p>
+                                    <p><strong>Your Message:</strong></p>
+                                    <p>{contact_msg.message}</p>
+                                    <hr style="margin:20px 0;">
+                                    <h2>Our Response:</h2>
+                                    <p>{contact_msg.admin_response}</p>
+                                </div>
+                            </div>
+                        </body>
+                        </html>"""
+                        
+                        msg = MailMessage(subject=subject, recipients=[contact_msg.email], html=html_body, sender=self.comms.app.config['MAIL_DEFAULT_SENDER'])
+                        self.comms._send_email_message(msg, f"Response sent to {contact_msg.email} for message {message_id}")
+                except Exception as e:
+                    logger.error(f"Error sending response email: {str(e)}")
+                
+                return jsonify({"status": "success"})
+            
+            elif action == "archive":
+                contact_msg.status = "archived"
+                db.session.commit()
+                return jsonify({"status": "success"})
+            
+            return jsonify({"error": "Invalid action"}), 400
+        
+        elif request.method == "DELETE":
+            message_id = request.json.get("id") if request.is_json else request.args.get("id")
+            if not message_id:
+                return jsonify({"error": "Message ID required"}), 400
+            
+            contact_msg = db.session.get(ContactMessage, message_id)
+            if not contact_msg:
+                return jsonify({"error": "Message not found"}), 404
+            
+            db.session.delete(contact_msg)
+            db.session.commit()
+            return jsonify({"status": "success"})
+        
+        return jsonify({"error": "Invalid method"}), 405
 
     def upload_file(self, message_id):
         msg = db.session.get(Message, message_id)
@@ -2046,7 +2181,9 @@ class EmmaServer:
                 buffer,
                 as_attachment=True,
                 download_name=f"Invoice_{invoice.invoice_number}.pdf",
-                mimetype='application/pdf'
+                mimetype='application/pdf',
+                conditional=True,
+                max_age=3600
             )
         except Exception as e:
             logger.error(f"Error generating PDF: {str(e)}")
@@ -2686,7 +2823,13 @@ class EmmaServer:
 
     def run(self, host="0.0.0.0", port=5000, debug=False, use_reloader=False):
         self.logger.info(f"Starting Emma's server on port {port} (debug={debug}, auto_reload={use_reloader})")
-        self.socketio.run(self.app, host=host, port=port, debug=debug, use_reloader=use_reloader)
+        try:
+            self.socketio.run(self.app, host=host, port=port, debug=debug, use_reloader=use_reloader, allow_unsafe_werkzeug=True)
+        except Exception as e:
+            self.logger.error(f"Socket.IO run failed: {str(e)}")
+            self.logger.info("Falling back to standard Flask server without Socket.IO")
+            from werkzeug.serving import run_simple
+            run_simple(host, port, self.app, use_reloader=use_reloader, use_debugger=debug)
 
 # --- SERVER BOOTSTRAP ---
 if __name__ == "__main__":
