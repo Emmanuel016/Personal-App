@@ -5,7 +5,10 @@ import bcrypt
 import logging
 import requests
 import base64
+import hashlib
 import threading
+import queue
+import time
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from io import BytesIO
@@ -24,6 +27,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.units import inch
 from functools import wraps
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import text
 
 # Import Database Schema & Manager
 from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, DatabaseManager
@@ -204,7 +209,8 @@ class AppConfig:
             MAIL_USERNAME=os.environ.get('MAIL_USERNAME', ''),
             MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD', ''),
             MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@emmastudio.com'),
-            MAIL_TIMEOUT=60,
+            MAIL_TIMEOUT=int(os.environ.get('MAIL_TIMEOUT', 12)),
+            MAIL_API_KEY=os.environ.get('MAIL_API_KEY', ''),
             MAIL_MAX_EMAILS=10,
             # Use SSL for providers that require it (Brevo uses TLS on port 587)
             MAIL_USE_SSL=os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
@@ -371,18 +377,61 @@ class CommunicationManager:
         self.socketio = socketio_instance
         self.db = db_instance
         self.config = config
+        self._email_queue = queue.Queue(maxsize=500)
+        self._email_worker = threading.Thread(target=self._email_worker_loop, name="email-worker", daemon=True)
+        self._email_worker.start()
 
-    def _send_email_message(self, message, description):
-        """Send an email and return False when SMTP delivery fails."""
-        if not self.app.config.get('MAIL_USERNAME') or not self.app.config.get('MAIL_PASSWORD'):
-            logger.error("Email is not configured: MAIL_USERNAME and MAIL_PASSWORD are required")
-            return False
+    def _email_worker_loop(self):
+        while True:
+            item = self._email_queue.get()
+            try:
+                if item is None:
+                    return
+                message, description, attempts = item
+                delivered = self._deliver_email(message, description)
+                if not delivered and attempts < 3:
+                    time.sleep(2 ** attempts)
+                    try:
+                        self._email_queue.put_nowait((message, description, attempts + 1))
+                    except queue.Full:
+                        logger.error("Email retry queue is full; dropping email: %s", description)
+            except Exception:
+                logger.exception("Unhandled email worker error")
+            finally:
+                self._email_queue.task_done()
 
-        if self.app.config.get('MAIL_USE_TLS') and self.app.config.get('MAIL_USE_SSL'):
-            logger.error("Invalid email configuration: MAIL_USE_TLS and MAIL_USE_SSL cannot both be enabled")
-            return False
-
+    def _deliver_email(self, message, description):
+        """Deliver using Brevo HTTPS API when configured, otherwise SMTP."""
+        api_key = self.app.config.get('MAIL_API_KEY')
         try:
+            if api_key:
+                sender = message.sender or self.app.config.get('MAIL_DEFAULT_SENDER')
+                sender_email = sender[0] if isinstance(sender, (tuple, list)) else sender
+                if isinstance(sender_email, str) and "<" in sender_email and ">" in sender_email:
+                    sender_email = sender_email.split("<", 1)[1].split(">", 1)[0].strip()
+                payload = {
+                    "sender": {"email": sender_email},
+                    "to": [{"email": r} for r in message.recipients],
+                    "subject": message.subject,
+                    "htmlContent": message.html or message.body or ""
+                }
+                response = requests.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={"accept": "application/json", "api-key": api_key, "content-type": "application/json"},
+                    json=payload, timeout=(3, 10)
+                )
+                if response.status_code >= 300:
+                    logger.error("Brevo API rejected email (%s): %s", response.status_code, response.text[:500])
+                    return False
+                logger.info(description)
+                return True
+
+            if not self.app.config.get('MAIL_USERNAME') or not self.app.config.get('MAIL_PASSWORD'):
+                logger.error("Email is not configured: set MAIL_API_KEY or MAIL_USERNAME/MAIL_PASSWORD")
+                return False
+            if self.app.config.get('MAIL_USE_TLS') and self.app.config.get('MAIL_USE_SSL'):
+                logger.error("Invalid email configuration: MAIL_USE_TLS and MAIL_USE_SSL cannot both be enabled")
+                return False
             with self.app.app_context():
                 self.mail.send(message)
             logger.info(description)
@@ -396,7 +445,20 @@ class CommunicationManager:
             elif smtp_code == 550 or 'sender' in error_text.lower() or 'recipient' in error_text.lower():
                 logger.error("SMTP rejected the sender or recipient: verify the sender/domain and provider account limits")
             elif 'timeout' in error_text.lower():
-                logger.error("SMTP connection timed out: check the SMTP host, port, TLS/SSL mode, and network access")
+                logger.error("Email connection timed out")
+            return False
+
+    def _send_email_message(self, message, description):
+        """Queue email delivery so HTTP requests never block on SMTP/provider latency."""
+        if not self.app.config.get('MAIL_API_KEY') and (not self.app.config.get('MAIL_USERNAME') or not self.app.config.get('MAIL_PASSWORD')):
+            logger.error("Email is not configured: set MAIL_API_KEY or MAIL_USERNAME/MAIL_PASSWORD")
+            return False
+        try:
+            self._email_queue.put_nowait((message, description, 0))
+            logger.info("Email queued: %s", description)
+            return True
+        except queue.Full:
+            logger.error("Email queue is full; refusing new email")
             return False
 
     def send_notification(self, user_id, notification_type, title, message, data=None, target_role="client"):
@@ -446,7 +508,7 @@ class CommunicationManager:
 
     def send_invoice_email(self, invoice, payment_methods=None, late_fee=None, early_discount=None):
         try:
-            if not self.app.config['MAIL_USERNAME']:
+            if not self.app.config.get('MAIL_API_KEY') and not self.app.config.get('MAIL_USERNAME'):
                 logger.warning("Email not configured, skipping invoice email")
                 return False
             client = db.session.get(User, invoice.client_id)
@@ -523,7 +585,7 @@ class CommunicationManager:
 
     def send_reminder_email(self, invoice):
         try:
-            if not self.app.config['MAIL_USERNAME']: return
+            if not self.app.config.get('MAIL_API_KEY') and not self.app.config.get('MAIL_USERNAME'): return
             client = db.session.get(User, invoice.client_id)
             if not client or not client.email: return
             
@@ -565,7 +627,7 @@ class CommunicationManager:
     def send_password_reset_email(self, email, token):
         """Send password reset email with secure token link"""
         try:
-            if not self.app.config['MAIL_USERNAME']:
+            if not self.app.config.get('MAIL_API_KEY') and not self.app.config.get('MAIL_USERNAME'):
                 logger.warning("Email not configured, skipping password reset email")
                 return False
 
@@ -683,7 +745,7 @@ class FinanceManager:
         try:
             with self.app.app_context():
                 today = date.today()
-                for invoice in Invoice.query.filter_by(status='pending').all():
+                for invoice in Invoice.query.filter_by(status='pending').yield_per(100):
                     days_until_due = (invoice.due_date - today).days
                     reminder_days = [int(d) for d in os.environ.get('INVOICE_REMINDER_SCHEDULE', '7,1,-1,-7').split(',')]
                     
@@ -707,7 +769,7 @@ class FinanceManager:
                 today = date.today()
                 reminder_days = [int(d) for d in os.environ.get('DEADLINE_REMINDER_SCHEDULE', '7,3,1,-1').split(',')]
                 
-                for project in Project.query.filter(Project.status != 'Completed').all():
+                for project in Project.query.filter(Project.status != 'Completed').yield_per(100):
                     if not project.deadline:
                         continue
                     
@@ -780,7 +842,10 @@ class EmmaServer:
 
         self._register_routes()
         self._register_sockets()
-        self._setup_scheduler()
+        if os.environ.get("SCHEDULER_ENABLED", "false").lower() in ("1", "true", "yes"):
+            self._setup_scheduler()
+        else:
+            self.logger.info("Scheduler disabled in web process")
         
         self.app.after_request(self.after_request)
 
@@ -908,24 +973,42 @@ class EmmaServer:
         self.socketio.on('mark_notification_read')(self.handle_mark_read)
         self.socketio.on('get_notifications')(self.handle_get_notifications)
 
+    def _run_scheduled_once(self, job_name, func):
+        """Run a scheduled job once across all Gunicorn workers using a Postgres advisory lock."""
+        lock_key = int.from_bytes(hashlib.sha256(job_name.encode()).digest()[:4], "big") & 0x7fffffff
+        try:
+            if self.config.DATABASE_URL.startswith("postgresql"):
+                with db.engine.connect() as conn:
+                    acquired = conn.execute(text("SELECT pg_try_advisory_lock(:key)"), {"key": lock_key}).scalar()
+                    if not acquired:
+                        return
+                    try:
+                        func()
+                    finally:
+                        conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": lock_key})
+            else:
+                func()
+        except Exception:
+            logger.exception("Scheduled job failed: %s", job_name)
+
     def _setup_scheduler(self):
         self.scheduler.add_job(
-            func=self.finance.check_invoice_reminders,
+            func=lambda: self._run_scheduled_once("invoice_reminder_check", self.finance.check_invoice_reminders),
             trigger="interval", hours=1, id='invoice_reminder_check',
             name='Check invoice payment reminders', replace_existing=True
         )
         self.scheduler.add_job(
-            func=self.finance.check_deadline_reminders,
+            func=lambda: self._run_scheduled_once("deadline_reminder_check", self.finance.check_deadline_reminders),
             trigger="interval", hours=6, id='deadline_reminder_check',
             name='Check project deadline reminders', replace_existing=True
         )
         self.scheduler.add_job(
-            func=self.cleanup_old_notifications,
+            func=lambda: self._run_scheduled_once("notification_cleanup", self.cleanup_old_notifications),
             trigger="interval", hours=24, id='notification_cleanup',
             name='Clean up old notifications', replace_existing=True
         )
         self.scheduler.add_job(
-            func=self.cleanup_expired_reset_tokens,
+            func=lambda: self._run_scheduled_once("reset_token_cleanup", self.cleanup_expired_reset_tokens),
             trigger="interval", hours=6, id='reset_token_cleanup',
             name='Clean up expired password reset tokens', replace_existing=True
         )
@@ -1316,27 +1399,34 @@ class EmmaServer:
         role = session.get("role", "client")
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 50, type=int), 100)
-        query = Project.query.order_by(Project.date_created.desc()) if role.lower() == "admin" else Project.query.filter_by(client_user_id=session.get("user_id")).order_by(Project.date_created.desc())
+        query = Project.query.options(joinedload(Project.client)).order_by(Project.date_created.desc()) if role.lower() == "admin" else Project.query.options(joinedload(Project.client)).filter_by(client_user_id=session.get("user_id")).order_by(Project.date_created.desc())
         paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        client_ids = {p.client_user_id for p in paginated.items if p.client_user_id}
+        latest_messages = {}
+        if client_ids:
+            latest_ts = (db.session.query(Message.client_id, db.func.max(Message.timestamp).label("latest_timestamp"))
+                         .filter(Message.client_id.in_(client_ids), Message.attachments.any())
+                         .group_by(Message.client_id).subquery())
+            latest_rows = (Message.query.options(selectinload(Message.attachments))
+                           .join(latest_ts, (Message.client_id == latest_ts.c.client_id) & (Message.timestamp == latest_ts.c.latest_timestamp))
+                           .all())
+            latest_messages = {m.client_id: m for m in latest_rows}
 
         projects_data = []
         for p in paginated.items:
             client_details = None
-            if p.client_user_id:
-                client = db.session.get(User, p.client_user_id)
-                if client: 
-                    client_details = {"username": client.username, "email": client.email, "company": client.company, "date_added": client.date_added.isoformat() if client.date_added else None}
-            
+            client = p.client
+            if client:
+                client_details = {"username": client.username, "email": client.email, "company": client.company, "date_added": client.date_added.isoformat() if client.date_added else None}
+
             attached_files = []
-            if p.client_user_id:
-                # Get all messages with attachments for this client, ordered by timestamp
-                order_messages = Message.query.filter_by(client_id=p.client_user_id).filter(Message.attachments.any()).order_by(Message.timestamp.desc()).all()
-                # Get the most recent message with attachments for this project
-                if order_messages:
-                    attached_files = [{"id": f.id, "original_filename": f.original_filename, "file_size": f.file_size, "download_url": f"/api/files/{f.id}/download"} for f in order_messages[0].attachments]
+            latest_message = latest_messages.get(p.client_user_id)
+            if latest_message:
+                attached_files = [{"id": f.id, "original_filename": f.original_filename, "file_size": f.file_size, "download_url": f"/api/files/{f.id}/download"} for f in latest_message.attachments]
 
             project_data = {
-                "id": p.id, "client_user_id": p.client_user_id, "client_name": p.client_name or (db.session.get(User, p.client_user_id).username if db.session.get(User, p.client_user_id) else None),
+                "id": p.id, "client_user_id": p.client_user_id, "client_name": p.client_name or (client.username if client else None),
                 "client_details": client_details, "title": p.title, "desc": p.desc, "status": p.status, "date_created": p.date_created.isoformat() if p.date_created else None,
                 "amount_paid": float(p.amount_paid or 0), "price": float(p.price or 0), "attached_files": attached_files
             }
@@ -1419,7 +1509,7 @@ class EmmaServer:
         token = self.finance.get_paypal_access_token()
         if not token: return jsonify({"error": "PayPal Auth Failed"}), 500
         payload = {"intent": "sale", "payer": {"payment_method": "paypal"}, "redirect_urls": {"return_url": url_for("paypal_execute_payment", _external=True), "cancel_url": url_for("paypal_cancel_payment", _external=True)}, "transactions": [{"amount": {"total": str(round(amount, 2)), "currency": "GBP"}, "description": f"Payment for {project.title}", "custom": str(project_id)}]}
-        res = requests.post(f"{self.config.PAYPAL_API_BASE}/v1/payments/payment", headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}, json=payload)
+        res = requests.post(f"{self.config.PAYPAL_API_BASE}/v1/payments/payment", headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}, json=payload, timeout=(3, 15))
         if res.status_code == 201:
             payment_id = res.json().get("id")
             session[f"paypal_payment_{project_id}"] = payment_id
@@ -1430,7 +1520,7 @@ class EmmaServer:
         payment_id = request.args.get("paymentId")
         payer_id = request.args.get("PayerID")
         token = self.finance.get_paypal_access_token()
-        res = requests.post(f"{self.config.PAYPAL_API_BASE}/v1/payments/payment/{payment_id}/execute", headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}, json={"payer_id": payer_id})
+        res = requests.post(f"{self.config.PAYPAL_API_BASE}/v1/payments/payment/{payment_id}/execute", headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}, json={"payer_id": payer_id}, timeout=(3, 15))
         
         if res.status_code == 200:
             custom = res.json().get("transactions", [])[0].get("custom")
@@ -1509,7 +1599,7 @@ class EmmaServer:
             if target_id != 0 and target_id != uid: return jsonify({"error": "Access denied"}), 403
             target_id = uid
         if request.method == "GET":
-            return jsonify([{"id": m.id, "client_id": m.client_id, "from_role": m.from_role, "content": m.content, "timestamp": m.timestamp.isoformat(), "attachments": [{"id": a.id, "original_filename": a.original_filename, "file_size": a.file_size, "download_url": f"/api/files/{a.id}/download"} for a in m.attachments]} for m in Message.query.filter_by(client_id=target_id).order_by(Message.timestamp.asc()).all()])
+            return jsonify([{"id": m.id, "client_id": m.client_id, "from_role": m.from_role, "content": m.content, "timestamp": m.timestamp.isoformat(), "attachments": [{"id": a.id, "original_filename": a.original_filename, "file_size": a.file_size, "download_url": f"/api/files/{a.id}/download"} for a in m.attachments]} for m in Message.query.options(selectinload(Message.attachments)).filter_by(client_id=target_id).order_by(Message.timestamp.asc()).all()])
         try:
             content = SecurityManager.sanitize_input((request.form if request.content_type and 'multipart/form-data' in request.content_type else request.json).get("content", ""))
             if not content: return jsonify({"error": "No content"}), 400
@@ -1522,8 +1612,9 @@ class EmmaServer:
                 if file and SecurityManager.allowed_file(file.filename):
                     sf = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{secure_filename(file.filename)}"
                     try:
-                        file_content = file.read()
-                        db.session.add(FileAttachment(message_id=msg.id, client_id=target_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=len(file_content), mime_type=file.content_type, uploaded_by_role=msg.from_role, file_content=file_content))
+                        file_path = self.config.UPLOADS_DIR / sf
+                        file.save(str(file_path))
+                        db.session.add(FileAttachment(message_id=msg.id, client_id=target_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=file.content_length or file_path.stat().st_size, mime_type=file.content_type, uploaded_by_role=msg.from_role))
                         uploaded_files.append(secure_filename(file.filename))
                     except Exception as e:
                         self.logger.error(f"Failed to save file: {str(e)}")
@@ -1565,13 +1656,19 @@ class EmmaServer:
         sf = f"{secrets.token_hex(16)}_{secure_filename(file.filename)}"
         
         try:
-            file_content = file.read()
-            attachment = FileAttachment(message_id=message_id, client_id=msg.client_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=len(file_content), mime_type=file.content_type, uploaded_by_role="admin" if session.get("role").lower() == "admin" else "client", file_content=file_content)
+            file_path = self.config.UPLOADS_DIR / sf
+            file.save(str(file_path))
+            attachment = FileAttachment(message_id=message_id, client_id=msg.client_id, original_filename=secure_filename(file.filename), stored_filename=sf, file_size=file.content_length or file_path.stat().st_size, mime_type=file.content_type, uploaded_by_role="admin" if session.get("role").lower() == "admin" else "client")
             db.session.add(attachment)
             db.session.commit()
             return jsonify({"status": "success", "attachment": {"id": attachment.id, "original_filename": attachment.original_filename, "file_size": attachment.file_size, "download_url": f"/api/files/{attachment.id}/download"}})
         except Exception as e:
             self.logger.error(f"File upload failed: {str(e)}")
+            try:
+                if file_path.exists():
+                    file_path.unlink()
+            except Exception:
+                logger.warning("Could not clean up failed upload %s", sf, exc_info=True)
             db.session.rollback()
             return jsonify({"error": f"File upload failed: {str(e)}"}), 500
 
@@ -1587,12 +1684,14 @@ class EmmaServer:
                 logger.warning(warning_msg)
                 return jsonify({"error": "Access denied"}), 403
             
-            if not attachment.file_content:
-                logger.error(f"File content not found in database for file {file_id}")
-                return jsonify({"error": "File content not found"}), 404
-            
-            logger.info(f"Downloading file {file_id}: {attachment.original_filename} from database")
-            return send_file(BytesIO(attachment.file_content), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type)
+            file_path = self.config.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
+            if file_path.exists():
+                return send_file(str(file_path), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type, conditional=True, max_age=3600)
+            if attachment.file_content:
+                logger.warning("Legacy DB-backed file %s served from LargeBinary", file_id)
+                return send_file(BytesIO(attachment.file_content), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type)
+            logger.error(f"File content not found for file {file_id}")
+            return jsonify({"error": "File content not found"}), 404
         except Exception as e:
             logger.error(f"Error downloading file {file_id}: {str(e)}")
             return jsonify({"error": "Download failed"}), 500
@@ -1676,7 +1775,7 @@ class EmmaServer:
             res = requests.post(
                 f"{self.config.PAYPAL_API_BASE}/v1/payments/payment",
                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                json=payload
+                json=payload, timeout=(3, 15)
             )
             
             if res.status_code == 201:
@@ -2086,7 +2185,7 @@ class EmmaServer:
                 return jsonify({"error": "No email address provided"}), 400
             
             # Check email configuration
-            if not self.app.config['MAIL_USERNAME']:
+            if not self.app.config.get('MAIL_API_KEY') and not self.app.config.get('MAIL_USERNAME'):
                 return jsonify({"error": "Email not configured. Please set MAIL_USERNAME and MAIL_PASSWORD"}), 400
             
             # Create test email
