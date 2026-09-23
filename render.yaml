@@ -30,27 +30,17 @@ services:
           name: personal-app-db
           property: connectionString
       - key: PORT
-        value: "8000"
+        value: "5000"
       - key: WORKERS
         value: "2"
       - key: TIMEOUT
-        value: "120"
+        value: "12"
       - key: MAX_REQUESTS
         value: "5000"
       - key: MAX_REQUESTS_JITTER
         value: "500"
-      # Email configuration - using Brevo SMTP for production
-      # Set MAIL_USERNAME to the Brevo account email and MAIL_PASSWORD to an SMTP key.
-      # Brevo SMTP: smtp-relay.brevo.com:587 with TLS
-      - key: MAIL_SERVER
-        value: smtp-relay.brevo.com
-      - key: MAIL_PORT
-        value: "587"
-      - key: MAIL_USE_TLS
-        value: "true"
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
+      # Email configuration - using Brevo API Key for production
+      - key: MAIL_API_KEY
         sync: false
       - key: MAIL_DEFAULT_SENDER
         sync: false
