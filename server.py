@@ -813,17 +813,21 @@ class EmmaServer:
         # Map extensions
         db.init_app(self.app)
         self.mail = Mail(self.app)
-        # Force long-polling only for Flask development server compatibility
+        # Production-safe Socket.IO configuration.
+        # Keep the application on Python threads (not eventlet/gevent) and allow
+        # WebSocket with polling fallback. Gunicorn runs a SINGLE process with
+        # multiple threads so Socket.IO session state remains in one process.
         self.socketio = SocketIO(
-            self.app, 
-            cors_allowed_origins=self.config.allowed_origins, 
-            ping_timeout=60, 
-            ping_interval=25, 
+            self.app,
+            cors_allowed_origins=self.config.allowed_origins,
+            ping_timeout=60,
+            ping_interval=25,
             async_mode='threading',
             always_connect=False,
             engineio_logger=False,
             socketio_logger=False,
-            transports=['polling']  # Disable WebSocket, use long-polling only
+            transports=['websocket', 'polling'],
+            allow_upgrades=True
         )
         self.limiter = Limiter(
             app=self.app, key_func=get_remote_address, default_limits=["100000 per hour"], storage_uri="memory://"

@@ -17,8 +17,8 @@ let reconnectDelay = 1000;
 function initializeWebSocket() {
     if (typeof io !== 'undefined') {
         socket = io({
-            transports: ['polling'],  // Force polling only for Flask dev server compatibility
-            upgrade: false,  // Disable WebSocket upgrade
+            transports: ['websocket', 'polling'],  // Prefer WebSocket, keep polling as fallback
+            upgrade: true,  // Allow Engine.IO to upgrade from polling when needed
             reconnection: true,
             reconnectionAttempts: maxReconnectAttempts,
             reconnectionDelay: reconnectDelay,
