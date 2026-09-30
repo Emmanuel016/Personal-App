@@ -1,1 +1,0 @@
-web: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --worker-class gthread --threads 50 --timeout 120 --graceful-timeout 30 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile - --log-level info --worker-tmp-dir /dev/shm

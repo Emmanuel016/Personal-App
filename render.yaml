@@ -1,16 +1,16 @@
 services:
   - type: web
-    name: personal-app
+    name: emma-studio
     env: python
     plan: free
     pythonVersion: 3.12.0
-    
+
     # Build command - run build script
     buildCommand: bash build.sh
-    
+
     # Start command - run start script
     startCommand: bash start.sh
-    
+
     # Environment variables
     envVars:
       - key: FLASK_ENV
@@ -23,33 +23,55 @@ services:
         generateValue: true
       - key: HTTPS_ONLY
         value: "true"
-      - key: ALLOWED_ORIGINS
-        value: "https://emma-studio.onrender.com"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: personal-app-db
-          property: connectionString
       - key: PORT
         value: "5000"
       - key: WORKERS
         value: "1"
+      - key: THREADS
+        value: "50"
       - key: TIMEOUT
         value: "120"
       - key: MAX_REQUESTS
-        value: "5000"
+        value: "1000"
       - key: MAX_REQUESTS_JITTER
-        value: "500"
-      # Email configuration - using Brevo API Key for production
+        value: "100"
+
+      # Database - Set manually in Render dashboard (External Supabase)
+      - key: DATABASE_URL
+        sync: false
+
+      # Application URLs - Update with actual Render URL after deployment
+      - key: ALLOWED_ORIGINS
+        value: "https://emma-studio.onrender.com"
+      - key: APP_BASE_URL
+        value: "https://emma-studio.onrender.com/"
+
+      # Email configuration - Brevo API (Set in Render dashboard)
       - key: MAIL_API_KEY
         sync: false
       - key: MAIL_DEFAULT_SENDER
         sync: false
+      # Brevo SMTP fallback configuration
+      - key: MAIL_SERVER
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "True"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+      # PayPal Configuration (Optional)
       - key: PAYPAL_MODE
         value: sandbox
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
+
+      # Company Information
       - key: COMPANY_NAME
         value: EmmaStudio
       - key: COMPANY_ADDRESS
@@ -62,6 +84,8 @@ services:
         sync: false
       - key: COMPANY_EMAIL
         sync: false
+
+      # Payment Configuration
       - key: PAYMENT_METHODS
         value: "PayPal, Bank Transfer"
       - key: LATE_FEE
@@ -74,15 +98,17 @@ services:
         value: "30"
       - key: INVOICE_REMINDER_SCHEDULE
         value: "7,1,-1,-7"
-    
-    # Health check - use API test endpoint instead of login
+
+      # Scheduler Configuration
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: NOTIFICATION_CLEANUP_DAYS
+        value: "90"
+      - key: DEADLINE_REMINDER_SCHEDULE
+        value: "7,3,1,-1"
+
+    # Health check - use API test endpoint
     healthCheckPath: /api/test
-    
+
     # Auto-scaling configuration
     numInstances: 1
-
-databases:
-  - name: personal-app-db
-    plan: free
-    databaseName: personalapp
-    user: personalapp

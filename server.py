@@ -1,3 +1,4 @@
+#type: ignore
 import os
 import re
 import secrets
@@ -152,7 +153,8 @@ class AppConfig:
             if self.DATABASE_URL.startswith("postgres://"):
                 self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
             if self.DATABASE_URL.startswith("postgresql://") and "sslmode=" not in self.DATABASE_URL:
-                if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws")):
+                # Add SSL for cloud providers (Render, Heroku, AWS, Supabase)
+                if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws", "supabase", "db.supabase")):
                     sep = "&" if "?" in self.DATABASE_URL else "?"
                     self.DATABASE_URL = f"{self.DATABASE_URL}{sep}sslmode=require"
         else:
@@ -192,7 +194,8 @@ class AppConfig:
                 'connect_timeout': 10,
             }
 
-            if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws")):
+            # SSL for cloud providers including Supabase
+            if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws", "supabase", "db.supabase")):
                 connect_args['sslmode'] = 'require'
 
             engine_options['connect_args'] = connect_args
@@ -210,7 +213,8 @@ class AppConfig:
             SQLALCHEMY_DATABASE_URI=self.DATABASE_URL,
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
             SQLALCHEMY_ENGINE_OPTIONS=engine_options,
-            MAIL_SERVER=os.environ.get('MAIL_SERVER', 'smtp.gmail.com'),
+            # Email configuration - Brevo SMTP/API (primary)
+            MAIL_SERVER=os.environ.get('MAIL_SERVER', 'smtp-relay.brevo.com'),
             MAIL_PORT=int(os.environ.get('MAIL_PORT', 587)),
             MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1'],
             MAIL_USERNAME=os.environ.get('MAIL_USERNAME', ''),
@@ -411,6 +415,7 @@ class CommunicationManager:
         """Deliver using Brevo HTTPS API when configured, otherwise SMTP."""
         api_key = self.app.config.get('MAIL_API_KEY')
         try:
+            # Prefer Brevo API if API key is configured
             if api_key:
                 sender = message.sender or self.app.config.get('MAIL_DEFAULT_SENDER')
                 sender_email = sender[0] if isinstance(sender, (tuple, list)) else sender
@@ -430,11 +435,12 @@ class CommunicationManager:
                 if response.status_code >= 300:
                     logger.error("Brevo API rejected email (%s): %s", response.status_code, response.text[:500])
                     return False
-                logger.info(description)
+                logger.info(f"Brevo API email sent successfully: {description}")
                 return True
 
+            # Fallback to SMTP if API key not configured
             if not self.app.config.get('MAIL_USERNAME') or not self.app.config.get('MAIL_PASSWORD'):
-                logger.error("Email is not configured: set MAIL_API_KEY or MAIL_USERNAME/MAIL_PASSWORD")
+                logger.error("Email is not configured: set MAIL_API_KEY for Brevo API or MAIL_USERNAME/MAIL_PASSWORD for SMTP")
                 return False
             if self.app.config.get('MAIL_USE_TLS') and self.app.config.get('MAIL_USE_SSL'):
                 logger.error("Invalid email configuration: MAIL_USE_TLS and MAIL_USE_SSL cannot both be enabled")
@@ -527,6 +533,11 @@ class CommunicationManager:
             pm = payment_methods or os.environ.get('PAYMENT_METHODS', 'PayPal, Bank Transfer')
             lf = late_fee or os.environ.get('LATE_FEE', '5% per month on overdue amount')
             ed = early_discount or os.environ.get('EARLY_DISCOUNT', '2% discount if paid within 10 days')
+            
+            # Get base URL from environment or construct from request context
+            from flask import request
+            base_url = os.environ.get('APP_BASE_URL', request.url_root if request else 'http://localhost:5000/')
+            
             # Calculate actual total cost from items
             actual_total_cost = 0.0
             if invoice.items:
@@ -572,8 +583,8 @@ class CommunicationManager:
                             <p><strong>Early Payment Discount:</strong> {ed}</p>
                         </div>
                         <p>To pay this invoice, click the button below:</p>
-                        <p style="text-align: center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pdf" class="button">Download PDF</a></p>
-                        <p style="text-align: center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pay" class="button">Pay Now</a></p>
+                        <p style="text-align: center;"><a href="{base_url}api/invoices/{invoice.id}/pdf" class="button">Download PDF</a></p>
+                        <p style="text-align: center;"><a href="{base_url}api/invoices/{invoice.id}/pay" class="button">Pay Now</a></p>
                     </div>
                 </div>
             </body>
@@ -604,6 +615,10 @@ class CommunicationManager:
             days_text = f"{abs(days_until_due)} days overdue" if days_until_due < 0 else f"{days_until_due} days until due"
             subject = f"Payment Reminder: Invoice {invoice.invoice_number}"
             
+            # Get base URL from environment or construct from request context
+            from flask import request
+            base_url = os.environ.get('APP_BASE_URL', request.url_root if request else 'http://localhost:5000/')
+            
             html_body = f"""
             <html>
             <body>
@@ -614,7 +629,7 @@ class CommunicationManager:
                         <p>Dear {client.username},</p>
                         <div style="background:#fff3cd;padding:15px;border-left:4px solid #ffc107;"><strong>Reminder:</strong> Your invoice is {days_text}.</div>
                         <ul><li>Amount Due: £{invoice.amount:.2f}</li></ul>
-                        <p style="text-align:center;"><a href="{{ request.url_root }}api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
+                        <p style="text-align:center;"><a href="{base_url}api/invoices/{invoice.id}/pay" style="display:inline-block;padding:12px 24px;background:#00f2fe;color:#0a192f;text-decoration:none;font-weight:bold;">Pay Now</a></p>
                     </div>
                 </div>
             </body>
@@ -638,9 +653,10 @@ class CommunicationManager:
                 logger.warning("Email not configured, skipping password reset email")
                 return False
 
-            # Generate reset link - using the current request's host for proper URL generation
+            # Generate reset link - using environment variable or request context
             from flask import request
-            reset_link = f"{request.url_root}reset-password/{token}"
+            base_url = os.environ.get('APP_BASE_URL', request.url_root if request else 'http://localhost:5000/')
+            reset_link = f"{base_url}reset-password/{token}"
 
             # Get support email from config
             support_email = os.environ.get('COMPANY_EMAIL', 'support@emmastudio.com')
@@ -831,8 +847,8 @@ class EmmaServer:
             ping_interval=25,
             async_mode='threading',
             always_connect=False,
+            logger=False,
             engineio_logger=False,
-            socketio_logger=False,
             transports=['polling'] if not use_websocket else ['websocket', 'polling'],
             allow_upgrades=use_websocket
         )
@@ -1626,7 +1642,6 @@ class EmmaServer:
                 type=user_type,
                 company=SecurityManager.sanitize_input(data.get("company", "N/A")),
                 phone=SecurityManager.sanitize_input(data.get("phone", "N/A")),
-                notes=SecurityManager.sanitize_input(data.get("notes", "")),
                 date_added=date.today()
             )
             

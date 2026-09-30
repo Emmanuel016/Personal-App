@@ -47,6 +47,8 @@ env/
 .env
 .env.*
 .env.local
+.env.superbase
+.env.render
 .flask_secret_key
 
 # JSON data files (now using PostgreSQL database)
