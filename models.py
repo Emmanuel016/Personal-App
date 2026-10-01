@@ -1,6 +1,9 @@
 import logging
+import os
 from datetime import datetime, date, timezone, timedelta
+from pathlib import Path
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
 
 # Initialize SQLAlchemy explicitly
 db = SQLAlchemy()
@@ -87,7 +90,27 @@ class FileAttachment(db.Model):
     mime_type = db.Column(db.String(100))
     uploaded_by_role = db.Column(db.String(50))
     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    file_content = db.Column(db.LargeBinary, nullable=True)
+
+# Event listener to delete physical file when FileAttachment is deleted
+@event.listens_for(FileAttachment, 'after_delete')
+def delete_file_on_attachment_delete(mapper, connection, target):
+    """Delete the physical file from disk when FileAttachment record is deleted"""
+    try:
+        # Determine uploads directory
+        base_dir = Path(__file__).resolve().parent
+        is_production = (
+            os.environ.get("FLASK_ENV", "").lower() == "production" or
+            os.environ.get("ENV", "").lower() == "production" or
+            os.environ.get("PRODUCTION", "").lower() in ("1", "true", "yes")
+        )
+        uploads_dir = Path("/opt/render/project/uploads") if is_production else base_dir / 'uploads'
+        
+        file_path = uploads_dir / target.stored_filename
+        if file_path.exists():
+            file_path.unlink()
+            logging.getLogger(__name__).info(f"Deleted file from disk via cascade: {target.stored_filename}")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Failed to delete file from disk via cascade: {target.stored_filename}, error: {e}")
 
 class Notification(db.Model):
     __tablename__ = "notifications"

@@ -1,6 +1,6 @@
 """
-Migration script to add file_content column to file_attachments table
-Run this script to add the new column for storing file content in the database
+Migration script to remove file_content column from file_attachments table
+Run this script to remove the legacy column after migrating to disk-only storage
 """
 import os
 import sys
@@ -13,7 +13,7 @@ from models import db
 load_dotenv()
 
 def migrate():
-    """Add file_content column to file_attachments table"""
+    """Remove file_content column from file_attachments table"""
     app = Flask(__name__)
     
     # Get database URL from environment
@@ -30,23 +30,23 @@ def migrate():
     
     with app.app_context():
         try:
-            # Check if column already exists
+            # Check if column exists
             inspector = inspect(db.engine)
             columns = [col['name'] for col in inspector.get_columns('file_attachments')]
             
-            if 'file_content' in columns:
-                print("Column 'file_content' already exists in file_attachments table")
+            if 'file_content' not in columns:
+                print("Column 'file_content' does not exist in file_attachments table")
                 return
             
-            # Add the column
+            # Drop the column
             with db.engine.connect() as conn:
                 if database_url.startswith("sqlite"):
-                    conn.execute(text("ALTER TABLE file_attachments ADD COLUMN file_content BLOB"))
+                    conn.execute(text("ALTER TABLE file_attachments DROP COLUMN file_content"))
                 else:
-                    conn.execute(text("ALTER TABLE file_attachments ADD COLUMN file_content BYTEA"))
+                    conn.execute(text("ALTER TABLE file_attachments DROP COLUMN file_content"))
                 conn.commit()
             
-            print("Successfully added file_content column to file_attachments table")
+            print("Successfully removed file_content column from file_attachments table")
             
         except Exception as e:
             print(f"Error during migration: {e}")

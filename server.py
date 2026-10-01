@@ -1807,7 +1807,7 @@ class EmmaServer:
         file = request.files.get('file')
         if not file or not SecurityManager.allowed_file(file.filename): return jsonify({"error": "Invalid file"}), 400
         
-        sf = f"{secrets.token_hex(16)}_{secure_filename(file.filename)}"
+        sf = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{secure_filename(file.filename)}"
         
         try:
             file_path = self.config.UPLOADS_DIR / sf
@@ -1841,11 +1841,8 @@ class EmmaServer:
             file_path = self.config.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
             if file_path.exists():
                 return send_file(str(file_path), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type, conditional=True, max_age=3600)
-            if attachment.file_content:
-                logger.warning("Legacy DB-backed file %s served from LargeBinary", file_id)
-                return send_file(BytesIO(attachment.file_content), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type)
-            logger.error(f"File content not found for file {file_id}")
-            return jsonify({"error": "File content not found"}), 404
+            logger.error(f"File not found on disk: {attachment.stored_filename}")
+            return jsonify({"error": "File not found"}), 404
         except Exception as e:
             logger.error(f"Error downloading file {file_id}: {str(e)}")
             return jsonify({"error": "Download failed"}), 500
@@ -1857,6 +1854,16 @@ class EmmaServer:
     def delete_file(self, file_id):
         attachment = db.session.get(FileAttachment, file_id)
         if not attachment or (session.get("role").lower() != "admin" and attachment.client_id != session.get("user_id")): return jsonify({"error": "Denied"}), 403
+        
+        # Delete the physical file from disk
+        try:
+            file_path = self.config.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
+            if file_path.exists():
+                file_path.unlink()
+                logger.info(f"Deleted file from disk: {attachment.stored_filename}")
+        except Exception as e:
+            logger.warning(f"Failed to delete file from disk: {attachment.stored_filename}, error: {e}")
+        
         db.session.delete(attachment)
         db.session.commit()
         return jsonify({"status": "success"})
