@@ -21,12 +21,19 @@ python -c "import flask; print(f'✓ Flask {flask.__version__} installed')"
 python -c "import sqlalchemy; print(f'✓ SQLAlchemy {sqlalchemy.__version__} installed')"
 
 # Create necessary directories
-# Run migration before app starts
+# Run migrations before app starts
 if python -c "from models import db; from flask import Flask; import os; app = Flask(__name__); app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///personalapp.db'); db.init_app(app); with app.app_context(): from sqlalchemy import inspect; print('file_content' in [c['name'] for c in inspect(db.engine).get_columns('file_attachments')])" 2>/dev/null | grep -q "True"; then
     echo "Running migration to remove file_content column..."
     python migrate_remove_file_content.py
 else
-    echo "Migration already applied, skipping..."
+    echo "file_content migration already applied, skipping..."
+fi
+
+if python -c "from models import db; from flask import Flask; import os; app = Flask(__name__); app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///personalapp.db'); db.init_app(app); with app.app_context(): from sqlalchemy import inspect; print('project_id' in [c['name'] for c in inspect(db.engine).get_columns('messages')])" 2>/dev/null | grep -q "False"; then
+    echo "Running migration to add project_id column to messages..."
+    python migrate_add_project_id_to_messages.py
+else
+    echo "project_id migration already applied, skipping..."
 fi
 
 echo "Creating directories..."

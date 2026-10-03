@@ -1,9 +1,11 @@
 import logging
 import os
+import re
 from datetime import datetime, date, timezone, timedelta
 from pathlib import Path
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
+from werkzeug.utils import secure_filename
 
 # Initialize SQLAlchemy explicitly
 db = SQLAlchemy()
@@ -52,6 +54,7 @@ class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=True)
     from_role = db.Column("sender_role", db.String(50))
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -105,10 +108,17 @@ def delete_file_on_attachment_delete(mapper, connection, target):
         )
         uploads_dir = Path("/opt/render/project/uploads") if is_production else base_dir / 'uploads'
         
-        file_path = uploads_dir / target.stored_filename
-        if file_path.exists():
-            file_path.unlink()
-            logging.getLogger(__name__).info(f"Deleted file from disk via cascade: {target.stored_filename}")
+        # Use the same filename pattern check as SecurityManager
+        if target.stored_filename and re.match(r'^\d{8}_\d{6}_[a-f0-9]+_', target.stored_filename):
+            clean_filename = target.stored_filename
+        else:
+            clean_filename = secure_filename(target.stored_filename)
+        
+        if clean_filename:
+            file_path = (uploads_dir / clean_filename).resolve()
+            if file_path.is_relative_to(uploads_dir.resolve()) and file_path.exists():
+                file_path.unlink()
+                logging.getLogger(__name__).info(f"Deleted file from disk via cascade: {target.stored_filename}")
     except Exception as e:
         logging.getLogger(__name__).warning(f"Failed to delete file from disk via cascade: {target.stored_filename}, error: {e}")
 

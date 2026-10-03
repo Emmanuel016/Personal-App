@@ -1440,7 +1440,7 @@ class EmmaServer:
 
         # Include deadline in notification if provided
         deadline_info = f" | Deadline: {deadline.strftime('%B %d, %Y')}" if deadline else ""
-        msg = Message(client_id=current_user_id, from_role="client", content=f"💼 NEW ORDER: Client '{current_username}' placed order for '{service_name}' | Est. Price: £{price:.2f}{deadline_info}")
+        msg = Message(client_id=current_user_id, project_id=new_project.id, from_role="client", content=f"💼 NEW ORDER: Client '{current_username}' placed order for '{service_name}' | Est. Price: £{price:.2f}{deadline_info}")
         db.session.add(msg)
         db.session.flush()
 
@@ -1467,15 +1467,17 @@ class EmmaServer:
         paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
         client_ids = {p.client_user_id for p in paginated.items if p.client_user_id}
+        # Get latest message with attachments for each project
+        project_ids = [p.id for p in paginated.items]
         latest_messages = {}
-        if client_ids:
-            latest_ts = (db.session.query(Message.client_id, db.func.max(Message.timestamp).label("latest_timestamp"))
-                         .filter(Message.client_id.in_(client_ids), Message.attachments.any())
-                         .group_by(Message.client_id).subquery())
+        if project_ids:
+            latest_ts = (db.session.query(Message.project_id, db.func.max(Message.timestamp).label("latest_timestamp"))
+                         .filter(Message.project_id.in_(project_ids), Message.attachments.any())
+                         .group_by(Message.project_id).subquery())
             latest_rows = (Message.query.options(selectinload(Message.attachments))
-                           .join(latest_ts, (Message.client_id == latest_ts.c.client_id) & (Message.timestamp == latest_ts.c.latest_timestamp))
+                           .join(latest_ts, (Message.project_id == latest_ts.c.project_id) & (Message.timestamp == latest_ts.c.latest_timestamp))
                            .all())
-            latest_messages = {m.client_id: m for m in latest_rows}
+            latest_messages = {m.project_id: m for m in latest_rows}
 
         projects_data = []
         for p in paginated.items:
@@ -1485,7 +1487,7 @@ class EmmaServer:
                 client_details = {"username": client.username, "email": client.email, "company": client.company, "date_added": client.date_added.isoformat() if client.date_added else None}
 
             attached_files = []
-            latest_message = latest_messages.get(p.client_user_id)
+            latest_message = latest_messages.get(p.id)
             if latest_message:
                 attached_files = [{"id": f.id, "original_filename": f.original_filename, "file_size": f.file_size, "download_url": f"/api/files/{f.id}/download"} for f in latest_message.attachments]
 
@@ -1838,7 +1840,7 @@ class EmmaServer:
                 logger.warning(warning_msg)
                 return jsonify({"error": "Access denied"}), 403
             
-            file_path = self.config.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
+            file_path = SecurityManager.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
             if file_path.exists():
                 return send_file(str(file_path), as_attachment=True, download_name=attachment.original_filename, mimetype=attachment.mime_type, conditional=True, max_age=3600)
             logger.error(f"File not found on disk: {attachment.stored_filename}")
@@ -1857,7 +1859,7 @@ class EmmaServer:
         
         # Delete the physical file from disk
         try:
-            file_path = self.config.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
+            file_path = SecurityManager.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
             if file_path.exists():
                 file_path.unlink()
                 logger.info(f"Deleted file from disk: {attachment.stored_filename}")
