@@ -188,7 +188,9 @@ Copy `.env.example` to `.env` and update values for your local or production env
 Copy-Item .env.example .env
 ```
 
-For local development, you can leave `DATABASE_URL` empty to use SQLite.
+Local development uses SQLite at `instance/personal-app-db.db` by default, even if
+`DATABASE_URL` is set in `.env`. Set `USE_LOCAL_DATABASE=False` to use the
+configured `DATABASE_URL` locally instead.
 
 ### 5. Start the App
 
@@ -209,7 +211,8 @@ http://localhost:8000
 | `FLASK_ENV` | Recommended | Set to `development` locally or `production` when deployed. |
 | `FLASK_SECRET_KEY` | Production required | Secret key for Flask sessions. Use a long random value. |
 | `ALLOWED_ORIGINS` | Recommended | Comma-separated CORS origins. Use specific domains in production. |
-| `DATABASE_URL` | Production required | PostgreSQL connection URL. Empty value falls back to local SQLite. |
+| `USE_LOCAL_DATABASE` | Optional | Defaults to `True` outside production. Uses the local SQLite database at `instance/personal-app-db.db`; set to `False` to use a locally configured `DATABASE_URL`. Production always requires `DATABASE_URL`. |
+| `DATABASE_URL` | Production required | PostgreSQL connection URL. Used in production, or locally when `USE_LOCAL_DATABASE=False`. |
 | `PAYPAL_MODE` | Optional | `sandbox` or `live`. Defaults to `sandbox`. |
 | `PAYPAL_CLIENT_ID` | Optional | PayPal REST API client ID. Required for PayPal payments. |
 | `PAYPAL_CLIENT_SECRET` | Optional | PayPal REST API secret. Required for PayPal payments. |
@@ -253,13 +256,13 @@ On Windows, use the Flask development server locally. Gunicorn is primarily for 
 
 ### Database Initialization
 
-Database tables are created automatically during app startup through `initialize_database()`. Local development uses:
+Database tables are created automatically during app startup through `initialize_database()`. Local development creates and uses this SQLite database file (no PostgreSQL server installation is needed):
 
 ```text
-instance/personalapp.db
+instance/personal-app-db.db
 ```
 
-or the Flask instance path for SQLite, depending on runtime configuration.
+Set `USE_LOCAL_DATABASE=False` in `.env` to use the configured `DATABASE_URL` during local development. Production continues to use its configured PostgreSQL `DATABASE_URL`.
 
 ## Application Pages
 

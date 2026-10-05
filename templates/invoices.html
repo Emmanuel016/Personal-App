@@ -948,7 +948,7 @@ async function generateInvoice() {
     const notes = document.getElementById('invoiceNotes').value;
     
     if (!projectId) {
-        showWarning('warning', 'Please select a project');
+        showModal('warning', 'Please select a project');
         return;
     }
     
@@ -972,15 +972,15 @@ async function generateInvoice() {
         const data = await response.json();
         
         if (response.ok) {
-            showWarning('success', `Invoice ${data.invoice_number} generated and email sent successfully!`);
+            showModal('success', `Invoice ${data.invoice_number} has been generated and sent to the client`);
             closeGenerateModal();
             loadInvoices();
         } else {
-            showWarning('error', data.error || 'Failed to generate invoice');
+            showModal('error', data.error || 'Failed to generate invoice');
         }
     } catch (error) {
         console.error('Error generating invoice:', error);
-        showWarning('error', 'Error generating invoice');
+        showModal('error', 'Error generating invoice');
     }
 }
 
@@ -994,13 +994,13 @@ async function resendInvoiceEmail(invoiceId) {
             const data = await response.json();
             
             if (response.ok) {
-                showWarning('success', 'Invoice email resent successfully!');
+                showModal('success', 'Invoice email has been resent to the client');
             } else {
-                showWarning('error', data.error || 'Failed to resend email');
+                showModal('error', data.error || 'Failed to resend email');
             }
         } catch (error) {
             console.error('Error resending email:', error);
-            showWarning('error', 'Error resending email');
+            showModal('error', 'Error resending email');
         }
     });
 }
@@ -1015,14 +1015,14 @@ async function markAsPaid(invoiceId) {
             const data = await response.json();
             
             if (response.ok) {
-                showWarning('success', 'Invoice marked as paid successfully!');
+                showModal('success', 'Invoice has been marked as paid');
                 loadInvoices();
             } else {
-                showWarning('error', data.error || 'Failed to mark as paid');
+                showModal('error', data.error || 'Failed to mark as paid');
             }
         } catch (error) {
             console.error('Error marking as paid:', error);
-            showWarning('error', 'Error marking as paid');
+            showModal('error', 'Error marking as paid');
         }
     });
 }
@@ -1076,22 +1076,37 @@ window.onclick = function(event) {
     }
 }
 
-function showWarning(type, message) {
+function showModal(type, message) {
     const modal = document.getElementById('warningModal');
     const titleEl = document.getElementById('warningTitle');
     const messageEl = document.getElementById('warningMessage');
-    
+    const modalContent = modal.querySelector('.modal-content');
+    const modalHeader = modal.querySelector('.modal-header');
+
     const icons = {
         success: '<i class="fa-solid fa-circle-check"></i> Success',
         error: '<i class="fa-solid fa-circle-xmark"></i> Error',
         warning: '<i class="fa-solid fa-triangle-exclamation"></i> Warning',
         info: '<i class="fa-solid fa-circle-info"></i> Info'
     };
-    
+
+    const colors = {
+        success: { border: '#4caf50', text: '#4caf50', headerBg: 'rgba(76, 175, 80, 0.1)' },
+        error: { border: '#f44336', text: '#f44336', headerBg: 'rgba(244, 67, 54, 0.1)' },
+        warning: { border: '#ffc107', text: '#ffc107', headerBg: 'rgba(255, 193, 7, 0.1)' },
+        info: { border: '#00f2fe', text: '#00f2fe', headerBg: 'rgba(0, 242, 254, 0.05)' }
+    };
+
     if (modal && titleEl && messageEl) {
         titleEl.innerHTML = icons[type] || icons.info;
         messageEl.textContent = message;
         modal.style.display = 'block';
+
+        // Apply type-specific styling
+        const colorScheme = colors[type] || colors.info;
+        modalContent.style.borderColor = colorScheme.border;
+        titleEl.style.color = colorScheme.text;
+        modalHeader.style.background = colorScheme.headerBg;
     }
 }
 

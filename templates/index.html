@@ -865,7 +865,7 @@
                 });
                 
                 if (result && result.status === 'success') {
-                    sysLog('Response sent successfully');
+                    sysLog('Response has been sent to the client');
                     closeModal();
                     loadContactMessages();
                 } else {
@@ -890,7 +890,7 @@
                 });
                 
                 if (result && result.status === 'success') {
-                    sysLog('Message archived successfully');
+                    sysLog('Message has been archived');
                     loadContactMessages();
                 } else {
                     sysLog('Failed to archive message', true);
@@ -911,7 +911,7 @@
                 });
                 
                 if (result && result.status === 'success') {
-                    sysLog('Message deleted successfully');
+                    sysLog('Message has been deleted');
                     loadContactMessages();
                 } else {
                     sysLog('Failed to delete message', true);

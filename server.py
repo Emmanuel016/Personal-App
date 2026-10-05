@@ -148,7 +148,22 @@ class AppConfig:
                     self.SECRET_KEY = generated_key
 
         # SQL Configuration
-        self.DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+        configured_database_url = os.environ.get("DATABASE_URL", "").strip()
+        use_local_database = os.environ.get("USE_LOCAL_DATABASE", "true").strip().lower() in ("1", "true", "yes", "on")
+
+        if self.is_production_env:
+            if not configured_database_url:
+                raise RuntimeError("DATABASE_URL must be set in production environment")
+            self.DATABASE_URL = configured_database_url
+        elif use_local_database or not configured_database_url:
+            instance_dir = self.BASE_DIR / "instance"
+            instance_dir.mkdir(parents=True, exist_ok=True)
+            local_database_path = instance_dir / "personal-app-db.db"
+            self.DATABASE_URL = f"sqlite:///{local_database_path.as_posix()}"
+            logger.info(f"Using local SQLite database: {local_database_path}")
+        else:
+            self.DATABASE_URL = configured_database_url
+
         if self.DATABASE_URL:
             if self.DATABASE_URL.startswith("postgres://"):
                 self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -157,10 +172,6 @@ class AppConfig:
                 if any(host in self.DATABASE_URL for host in ("render.com", "heroku", "aws", "supabase", "db.supabase")):
                     sep = "&" if "?" in self.DATABASE_URL else "?"
                     self.DATABASE_URL = f"{self.DATABASE_URL}{sep}sslmode=require"
-        else:
-            if self.is_production_env:
-                raise RuntimeError("DATABASE_URL must be set in production environment")
-            self.DATABASE_URL = "sqlite:///personalapp.db"
 
         self.secure_session_cookie = self.is_production_env or os.environ.get("HTTPS_ONLY", "").lower() in ("1", "true", "yes")
         self.allowed_origins = os.environ.get('ALLOWED_ORIGINS', '*').split(',')

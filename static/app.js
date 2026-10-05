@@ -306,10 +306,26 @@ function createWarningStyles() {
     document.head.appendChild(style);
 }
 
+function createErrorStyles() {
+    if (document.getElementById('dynamic-error-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'dynamic-error-styles';
+    style.textContent = `
+        .dynamic-error {
+            position: fixed; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.95); border: 1px solid rgba(239, 68, 68, 0.8);
+            color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000; max-width: 400px; font-family: Arial, sans-serif; animation: slideIn 0.3s ease;
+        }
+        .dynamic-error i { margin-right: 0.5rem; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+}
+
 function showSuccess(message) {
     createSuccessStyles();
     document.querySelectorAll('.dynamic-success').forEach(w => w.remove());
-    
+
     const success = document.createElement('div');
     success.className = 'dynamic-success';
     success.textContent = message;
@@ -318,30 +334,44 @@ function showSuccess(message) {
     icon.style.marginRight = '0.5rem';
     success.prepend(icon);
     document.body.appendChild(success);
-    
+
     setTimeout(() => {
         success.style.animation = 'slideIn 0.3s ease reverse';
         setTimeout(() => success.remove(), 300);
     }, 5000);
 }
 
-function showWarning(message) {
+function showWarning(type, message) {
+    // Handle both old (message only) and new (type, message) signature
+    if (typeof type === 'string' && typeof message === 'undefined') {
+        message = type;
+        type = 'warning';
+    }
+
     if (/session|authentication required|unauthorized|forbidden|too many requests|429|log in again/i.test(String(message || ''))) return;
-    createWarningStyles();
-    document.querySelectorAll('.dynamic-warning').forEach(w => w.remove());
-    
-    const warning = document.createElement('div');
-    warning.className = 'dynamic-warning';
-    warning.textContent = message;
+
+    const styles = {
+        success: { create: createSuccessStyles, class: 'dynamic-success', icon: 'fa-check-circle' },
+        warning: { create: createWarningStyles, class: 'dynamic-warning', icon: 'fa-exclamation-triangle' },
+        error: { create: createErrorStyles, class: 'dynamic-error', icon: 'fa-circle-xmark' }
+    };
+
+    const styleConfig = styles[type] || styles.warning;
+    styleConfig.create();
+    document.querySelectorAll(`.${styleConfig.class}`).forEach(w => w.remove());
+
+    const notification = document.createElement('div');
+    notification.className = styleConfig.class;
+    notification.textContent = message;
     const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-exclamation-triangle';
+    icon.className = `fa-solid ${styleConfig.icon}`;
     icon.style.marginRight = '0.5rem';
-    warning.prepend(icon);
-    document.body.appendChild(warning);
-    
+    notification.prepend(icon);
+    document.body.appendChild(notification);
+
     setTimeout(() => {
-        warning.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => warning.remove(), 300);
+        notification.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => notification.remove(), 300);
     }, 5000);
 }
 
