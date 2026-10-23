@@ -1047,6 +1047,21 @@ class EmmaServer:
             name='Clean up old notifications', replace_existing=True
         )
         self.scheduler.add_job(
+            func=lambda: self._run_scheduled_once("message_cleanup", self.cleanup_old_messages),
+            trigger="interval", hours=24, id='message_cleanup',
+            name='Clean up old messages', replace_existing=True
+        )
+        self.scheduler.add_job(
+            func=lambda: self._run_scheduled_once("project_cleanup", self.cleanup_old_projects),
+            trigger="interval", hours=24, id='project_cleanup',
+            name='Clean up old projects', replace_existing=True
+        )
+        self.scheduler.add_job(
+            func=lambda: self._run_scheduled_once("invoice_cleanup", self.cleanup_old_invoices),
+            trigger="interval", hours=24, id='invoice_cleanup',
+            name='Clean up old invoices', replace_existing=True
+        )
+        self.scheduler.add_job(
             func=lambda: self._run_scheduled_once("reset_token_cleanup", self.cleanup_expired_reset_tokens),
             trigger="interval", hours=6, id='reset_token_cleanup',
             name='Clean up expired password reset tokens', replace_existing=True
@@ -1056,6 +1071,66 @@ class EmmaServer:
             self.logger.info("Scheduler started successfully")
         except Exception as e:
             self.logger.error(f"Failed to start scheduler: {str(e)}")
+
+
+    def cleanup_old_messages(self):
+        """Clean up old messages based on retention policy (soft delete)"""
+        try:
+            with self.app.app_context():
+                retention_days = int(os.environ.get('MESSAGE_RETENTION_DAYS', '365'))
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+                
+                # Soft delete old messages instead of hard delete
+                deleted_count = Message.query.filter(
+                    Message.timestamp < cutoff_date,
+                    Message.deleted_at.is_(None)
+                ).update({"deleted_at": datetime.now(timezone.utc)})
+                
+                if deleted_count > 0:
+                    db.session.commit()
+                    logger.info(f"Soft deleted {deleted_count} old messages older than {retention_days} days")
+        except Exception as e:
+            logger.error(f"Error in message cleanup: {str(e)}")
+
+    def cleanup_old_projects(self):
+        """Clean up old completed projects based on retention policy (soft delete)"""
+        try:
+            with self.app.app_context():
+                retention_days = int(os.environ.get('PROJECT_RETENTION_DAYS', '730'))  # 2 years default
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+                
+                # Soft delete old completed projects
+                deleted_count = Project.query.filter(
+                    Project.status == 'Completed',
+                    Project.date_created < cutoff_date,
+                    Project.deleted_at.is_(None)
+                ).update({"deleted_at": datetime.now(timezone.utc)})
+                
+                if deleted_count > 0:
+                    db.session.commit()
+                    logger.info(f"Soft deleted {deleted_count} old completed projects older than {retention_days} days")
+        except Exception as e:
+            logger.error(f"Error in project cleanup: {str(e)}")
+
+    def cleanup_old_invoices(self):
+        """Clean up old paid invoices based on retention policy (soft delete)"""
+        try:
+            with self.app.app_context():
+                retention_days = int(os.environ.get('INVOICE_RETENTION_DAYS', '2555'))  # 7 years default (legal requirement)
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+                
+                # Soft delete old paid invoices
+                deleted_count = Invoice.query.filter(
+                    Invoice.status.in_(['paid', 'cancelled']),
+                    Invoice.paid_at < cutoff_date,
+                    Invoice.deleted_at.is_(None)
+                ).update({"deleted_at": datetime.now(timezone.utc)})
+                
+                if deleted_count > 0:
+                    db.session.commit()
+                    logger.info(f"Soft deleted {deleted_count} old paid invoices older than {retention_days} days")
+        except Exception as e:
+            logger.error(f"Error in invoice cleanup: {str(e)}")
 
     def after_request(self, response):
         origin = request.headers.get('Origin')
@@ -1560,9 +1635,12 @@ class EmmaServer:
     def delete_project(self, project_id):
         project = db.session.get(Project, project_id)
         if not project: return jsonify({"error": "Project not found"}), 404
-        db.session.delete(project)
+        
+        # Use soft delete instead of hard delete to prevent data loss
+        project.deleted_at = datetime.now(timezone.utc)
         db.session.commit()
-        return jsonify({"status": "success"})
+        logger.warning(f"Project {project_id} soft deleted (retained in database)")
+        return jsonify({"status": "success", "message": "Project marked as deleted"})
 
     def submit_payment(self):
         data = request.json or {}
@@ -1868,18 +1946,11 @@ class EmmaServer:
         attachment = db.session.get(FileAttachment, file_id)
         if not attachment or (session.get("role").lower() != "admin" and attachment.client_id != session.get("user_id")): return jsonify({"error": "Denied"}), 403
         
-        # Delete the physical file from disk
-        try:
-            file_path = SecurityManager.get_safe_file_path(attachment.stored_filename, self.config.UPLOADS_DIR)
-            if file_path.exists():
-                file_path.unlink()
-                logger.info(f"Deleted file from disk: {attachment.stored_filename}")
-        except Exception as e:
-            logger.warning(f"Failed to delete file from disk: {attachment.stored_filename}, error: {e}")
-        
-        db.session.delete(attachment)
+        # Use soft delete to prevent accidental data loss
+        attachment.deleted_at = datetime.now(timezone.utc)
         db.session.commit()
-        return jsonify({"status": "success"})
+        logger.warning(f"File attachment {file_id} soft deleted (retained in database)")
+        return jsonify({"status": "success", "message": "File marked as deleted"})
 
     # Invoices & Notifications standard mappings
     def get_invoices(self):

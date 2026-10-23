@@ -593,7 +593,7 @@ async function loadProjects() {
                 const days = p.days_until_deadline;
                 const status = p.deadline_status; // 'overdue', 'urgent', or 'normal'
                 const alertColor = status === 'overdue' ? "#ff003c" : (status === 'urgent' ? "#ff9100" : "#00f2fe");
-                const text = days < 0 ? `OVERDUE (${Math.abs(days)} Days)` : `${0-days} Days Remaining`;
+                const text = days < 0 ? `OVERDUE (${Math.abs(days)} Days)` : `${Math.abs(days)} Days left.`;
 
                 deadlineHtml = `
                     <div style="color: ${alertColor}; font-size: 11px; margin-top: 4px; font-weight: bold; text-transform: uppercase;">

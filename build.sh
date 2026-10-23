@@ -29,6 +29,14 @@ else
     echo "file_content migration already applied, skipping..."
 fi
 
+if python -c "from models import db; from flask import Flask; import os; app = Flask(__name__); app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///personalapp.db'); db.init_app(app); with app.app_context(): from sqlalchemy import inspect; print('deleted_at' in [c['name'] for c in inspect(db.engine).get_columns('users')])" 2>/dev/null | grep -q "True"; then
+    echo "Soft delete columns already exist, skipping migration..."
+else
+    echo "Running migration to add soft delete columns..."
+    python migrate_add_soft_delete.py
+fi
+
+
 if python -c "from models import db; from flask import Flask; import os; app = Flask(__name__); app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///personalapp.db'); db.init_app(app); with app.app_context(): from sqlalchemy import inspect; print('project_id' in [c['name'] for c in inspect(db.engine).get_columns('messages')])" 2>/dev/null | grep -q "False"; then
     echo "Running migration to add project_id column to messages..."
     python migrate_add_project_id_to_messages.py

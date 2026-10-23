@@ -25,11 +25,15 @@ class User(db.Model):
     phone = db.Column(db.String(50))
     type = db.Column(db.String(50))
     date_added = db.Column(db.Date)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
 
-    projects = db.relationship("Project", backref="client", lazy=True, cascade="all, delete-orphan")
-    messages = db.relationship("Message", backref="client_user", lazy=True, cascade="all, delete-orphan")
+    # SAFE CASCADES: Only cascade delete for temporary data (notifications, tokens)
+    # CRITICAL DATA: Projects, messages, invoices use save-update only to prevent accidental deletion
+    projects = db.relationship("Project", backref="client", lazy=True, cascade="save-update, merge")
+    messages = db.relationship("Message", backref="client_user", lazy=True, cascade="save-update, merge")
     notifications = db.relationship("Notification", backref="user", lazy=True, cascade="all, delete-orphan")
-    invoices = db.relationship("Invoice", backref="client", lazy=True, cascade="all, delete-orphan")
+    invoices = db.relationship("Invoice", backref="client", lazy=True, cascade="save-update, merge")
     notification_preferences = db.relationship("NotificationPreference", backref="user", lazy=True, cascade="all, delete-orphan")
     password_reset_tokens = db.relationship("PasswordResetToken", backref="user", lazy=True, cascade="all, delete-orphan")
 
@@ -47,8 +51,10 @@ class Project(db.Model):
     deadline = db.Column(db.Date)
     amount_paid = db.Column(db.Float, default=0.0)
     price = db.Column(db.Float, default=0.0)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     
-    invoices = db.relationship("Invoice", backref="project", lazy=True, cascade="all, delete-orphan")
+    # SAFE CASCADE: Invoices cascade only to prevent orphaned invoices
+    invoices = db.relationship("Invoice", backref="project", lazy=True, cascade="save-update, merge")
 
 class Message(db.Model):
     __tablename__ = "messages"
@@ -60,8 +66,10 @@ class Message(db.Model):
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     type = db.Column(db.String(50))
     payment_data = db.Column(db.JSON)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     
-    attachments = db.relationship("FileAttachment", backref="message", lazy=True, cascade="all, delete-orphan")
+    # SAFE CASCADE: File attachments cascade to prevent orphaned files
+    attachments = db.relationship("FileAttachment", backref="message", lazy=True, cascade="save-update, merge")
 
 class Service(db.Model):
     __tablename__ = "services"
@@ -93,6 +101,7 @@ class FileAttachment(db.Model):
     mime_type = db.Column(db.String(100))
     uploaded_by_role = db.Column(db.String(50))
     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
 # Event listener to delete physical file when FileAttachment is deleted
 @event.listens_for(FileAttachment, 'after_delete')
@@ -158,71 +167,4 @@ class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    invoice_number = db.Column(db.String(50), unique=True, nullable=False)
-    invoice_type = db.Column(db.String(50), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    due_date = db.Column(db.Date, nullable=False)
-    status = db.Column(db.String(50), default="pending")
-    items = db.Column(db.JSON)
-    payment_terms = db.Column(db.Text)
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    paid_at = db.Column(db.DateTime)
-    reminder_sent_at = db.Column(db.DateTime)
-    
-    __table_args__ = (
-        db.Index('idx_invoice_status', 'status'),
-        db.Index('idx_invoice_client', 'client_id'),
-        db.Index('idx_invoice_project', 'project_id'),
-        db.Index('idx_invoice_due_date', 'due_date'),
-    )
-
-class PasswordResetToken(db.Model):
-    __tablename__ = "password_reset_tokens"
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        db.Index('idx_reset_token_user', 'user_id'),
-        db.Index('idx_reset_token_expires', 'expires_at'),
-    )
-
-class ContactMessage(db.Model):
-    __tablename__ = "contact_messages"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False)
-    email = db.Column(db.String(255), nullable=False)
-    subject = db.Column(db.String(255), nullable=False)
-    service = db.Column(db.String(100))
-    message = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default="pending")  # pending, responded, archived
-    admin_response = db.Column(db.Text)
-    responded_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        db.Index('idx_contact_status', 'status'),
-        db.Index('idx_contact_created', 'created_at'),
-    )
-
-class DatabaseManager:
-    """OOP encapsulation for Database initializations"""
-    @staticmethod
-    def initialize_database(app, database_instance):
-        logger = logging.getLogger(__name__)
-        try:
-            logger.info("Initializing database...")
-            with app.app_context():
-                database_instance.create_all()
-                logger.info("Database tables created/verified successfully")
-        except Exception as e:
-            logger.error(f"Database initialization error: {str(e)}")
-            raise
+    invoi
