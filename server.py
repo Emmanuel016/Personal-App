@@ -1277,7 +1277,14 @@ class EmmaServer:
         user = User.query.filter_by(email=email).first()
         if not user:
             # Don't reveal if email exists for security
-            return render_template("forgot_password.html", success="If an account with this email exists, a reset link has been sent.")
+            return render_template("forgot_password.html", success="If an account with this email exists, a reset link has been sent.", email=email)
+
+        # Check if user has requested a reset recently (rate limiting: 1 per minute)
+        recent_token = PasswordResetToken.query.filter_by(user_id=user.id).order_by(PasswordResetToken.created_at.desc()).first()
+        if recent_token:
+            time_since_last = (datetime.now(timezone.utc) - recent_token.created_at).total_seconds()
+            if time_since_last < 60:  # 60 seconds cooldown
+                return render_template("forgot_password.html", error="Please wait 1 minute before requesting another reset email.", email=email)
 
         # Generate reset token
         token = SecurityManager.generate_reset_token()
@@ -1300,11 +1307,11 @@ class EmmaServer:
             email_sent = self.comms.send_password_reset_email(user.email, token)
             if not email_sent:
                 logger.warning(f"Password reset email not sent to {user.email} - email not configured")
-                return render_template("forgot_password.html", error="Email service not configured. Please contact support.")
-            return render_template("forgot_password.html", success="If an account with this email exists, a reset link has been sent.")
+                return render_template("forgot_password.html", error="Email service not configured. Please contact support.", email=email)
+            return render_template("forgot_password.html", success="If an account with this email exists, a reset link has been sent.", email=email)
         except Exception as e:
             logger.error(f"Error sending password reset email: {str(e)}")
-            return render_template("forgot_password.html", error="Error sending reset email. Please try again.")
+            return render_template("forgot_password.html", error="Error sending reset email. Please try again.", email=email)
 
     def reset_password(self, token):
         """Handle password reset with token"""
