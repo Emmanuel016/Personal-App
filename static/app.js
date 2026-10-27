@@ -63,7 +63,7 @@ function initializeWebSocket() {
 
         socket.on('notifications', (data) => {
             notifications = data.notifications;
-            renderNotifications();
+            renderNotificationDropdown();
         });
 
         socket.emit('get_notifications', { page: 1, per_page: 20 });
@@ -158,7 +158,7 @@ function incrementGroupCount(groupItem) {
     countBadge.textContent = count + 1;
 }
 
-function renderNotifications() {
+function renderNotificationDropdown() {
     const notificationList = document.getElementById('notificationList');
     if (!notificationList) return;
 
