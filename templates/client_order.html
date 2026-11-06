@@ -492,31 +492,18 @@ html {
 </style>
 
 <script>
-const SERVICES = [
-    { name: "Application Development", icon: "fa-solid fa-laptop-code", price: 2500 },
-    { name: "Database Development", icon: "fa-database", price: 1000 },
-    { name: "Web Development", icon: "fa-code", price: 2000 },
-    { name: "Graphic Design", icon: "fa-palette", price: 500 },
-    { name: "Video Editing", icon: "fa-video", price: 250 },
-    { name: "Software Testing", icon: "fa-bug", price: 600 },
-    { name: "Logo Design", icon: "fa-solid fa-pen-nib", price: 150 },
-    { name: "UI/UX Design", icon: "fa-wand-magic-sparkles", price: 100 }
-];
-
 let selectedService = "";
 let selectedPrice = 0;
 let selectedFiles = [];
 
-function initServiceGrid() {
+async function initServiceGrid() {
     // Set minimum date for deadline input (3 days from today)
     const deadlineInput = document.getElementById("projectDeadline");
     if (deadlineInput) {
-        const today = new Date();
-        // Reset today to midnight to avoid timezone issues
-        today.setHours(0, 0, 0, 0);
-        const minDate = new Date(today);
-        minDate.setDate(today.getDate() + 3);
-        deadlineInput.min = minDate.toISOString().split('T')[0];
+        const minDate = new Date();
+        minDate.setHours(0, 0, 0, 0);
+        minDate.setDate(minDate.getDate() + 3);
+        deadlineInput.min = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
     }
     
     // Add character count listener
@@ -531,17 +518,33 @@ function initServiceGrid() {
     
     const grid = document.getElementById("serviceSelector");
     grid.innerHTML = "";
-    SERVICES.forEach(s => {
-        const opt = document.createElement("div");
-        opt.className = "service-option";
-        opt.innerHTML = `
-            <i class="fa-solid ${s.icon}"></i>
-            <span>${s.name}</span>
-            <div class="service-price" style="margin-top: 12px; font-size: 14px; font-weight: bold; color: #7ef88a; border-top: 1px solid rgba(0, 242, 254, 0.2); padding-top: 8px;">£${s.price.toLocaleString()}</div>
-        `;
-        opt.onclick = () => selectService(s.name, s.price, opt);
-        grid.appendChild(opt);
-    });
+    try {
+        const response = await fetch('/api/services');
+        if (!response.ok) throw new Error(`Service catalog unavailable (${response.status})`);
+        const services = await response.json();
+        if (!Array.isArray(services)) throw new Error("Unexpected service catalog response");
+
+        services.forEach(service => {
+            const opt = document.createElement("div");
+            opt.className = "service-option";
+            const icon = document.createElement("i");
+            icon.className = `fa-solid ${service.icon || "fa-code"}`;
+            const name = document.createElement("span");
+            name.textContent = service.name;
+            const price = document.createElement("div");
+            price.className = "service-price";
+            price.style.cssText = "margin-top: 12px; font-size: 14px; font-weight: bold; color: #7ef88a; border-top: 1px solid rgba(0, 242, 254, 0.2); padding-top: 8px;";
+            price.textContent = `£${Number(service.price).toLocaleString()}`;
+            opt.append(icon, name, price);
+            opt.onclick = () => selectService(service.name, Number(service.price), opt);
+            grid.appendChild(opt);
+        });
+        if (!services.length) throw new Error("No services are currently available");
+    } catch (error) {
+        console.error("Could not load service catalog:", error);
+        grid.textContent = "Services could not be loaded. Please refresh the page to try again.";
+        document.getElementById("dispatchBtn").disabled = true;
+    }
 }
 
 function selectService(name, price, element) {
@@ -620,21 +623,19 @@ async function submitOrder() {
     const budget = document.getElementById("projectBudget").value;
     const deadline = document.getElementById("projectDeadline").value;
 
-    if (!desc.trim() || desc.length < 10) {
+    if (desc.trim().length < 10) {
         showWarning("Please provide a more detailed project brief.");
         return;
     }
 
     // Validate deadline if provided
     if (deadline) {
-        const selectedDate = new Date(deadline);
-        const today = new Date();
-        // Reset today to midnight to avoid timezone issues
-        today.setHours(0, 0, 0, 0);
-        const minDate = new Date(today);
-        minDate.setDate(today.getDate() + 3);
-        
-        if (selectedDate < minDate) {
+        const minDate = new Date();
+        minDate.setHours(0, 0, 0, 0);
+        minDate.setDate(minDate.getDate() + 3);
+        const minDateString = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
+
+        if (deadline < minDateString) {
             showWarning("Deadline must be at least 3 days from today.");
             return;
         }
@@ -650,13 +651,12 @@ async function submitOrder() {
         formData.append('description', desc);
         formData.append('budget', budget);
         formData.append('deadline', deadline);
-        formData.append('price', selectedPrice);
         
         selectedFiles.forEach(file => {
             formData.append('files', file);
         });
 
-        const response = await fetch(`${window.location.origin}/api/orders`, {
+        const response = await fetch('/api/orders', {
             method: "POST",
             body: formData
         });
@@ -664,20 +664,22 @@ async function submitOrder() {
         // Handle authentication errors
         if (response.status === 401 || response.status === 403) {
             console.error("Authentication required for order submission");
+            showWarning("Please sign in again before submitting your order.");
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> RETRY DISPATCH`;
             return;
         }
 
-        if (response.ok) {
+        const result = await response.json();
+        if (response.ok && result.project && Number.isFinite(Number(result.project.price))) {
             document.querySelector(".order-form-panel").innerHTML = `
                 <div class="text-center p-10 animate-fadeIn">
                     <i class="fa-solid fa-circle-check" style="font-size: 5rem; color: #00f2fe; margin-bottom: 25px;"></i>
                     <h2 class="glow-text">ORDER DISPATCHED</h2>
                     <p class="text-gray-400 mt-4 leading-relaxed">
                         Your project specifications have been securely transmitted to our team.<br>
-                        <strong style="color: #7ef88a; font-size: 16px; display: block; margin-top: 12px;">Estimated Service Price: £${selectedPrice.toLocaleString()}</strong>
-                        A notification has been sent to our team.
+                        <strong style="color: #7ef88a; font-size: 16px; display: block; margin-top: 12px;">Estimated Service Price: £${Number(result.project.price).toLocaleString()}</strong>
+                        Your request is in the review queue. Our team will follow up through secure chat.
                     </p>
                     <div class="auth-footer flex flex-col gap-3 items-center">
                         <button onclick="window.location.href='/client_billing'" class="btn-primary py-3 w-full max-w-xs">Check Out</button>
@@ -686,10 +688,11 @@ async function submitOrder() {
                 </div>
             `;
         } else {
-            throw new Error("Dispatch failed.");
+            throw new Error(result.error || "Dispatch failed.");
         }
     } catch (err) {
-        showWarning("Transmission failed. Please check your internet connection.");
+        console.error("Order submission failed:", err);
+        showWarning(err.message || "Transmission failed. Please check your internet connection.");
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> RETRY DISPATCH`;
     }

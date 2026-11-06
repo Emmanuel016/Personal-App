@@ -167,4 +167,70 @@ class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    invoi
+    invoice_number = db.Column(db.String(100), unique=True, nullable=False)
+    invoice_type = db.Column(db.String(50), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    due_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(50), default="pending")
+    items = db.Column(db.JSON)
+    payment_terms = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    paid_at = db.Column(db.DateTime)
+    reminder_sent_at = db.Column(db.DateTime)
+
+    __table_args__ = (
+        db.Index('idx_invoice_status', 'status'),
+        db.Index('idx_invoice_client', 'client_id'),
+        db.Index('idx_invoice_project', 'project_id'),
+        db.Index('idx_invoice_due_date', 'due_date'),
+    )
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.Index('idx_reset_token_user', 'user_id'),
+        db.Index('idx_reset_token_expires', 'expires_at'),
+    )
+
+class ContactMessage(db.Model):
+    __tablename__ = "contact_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    service = db.Column(db.String(100))
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), default="pending")
+    admin_response = db.Column(db.Text)
+    responded_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.Index('idx_contact_status', 'status'),
+        db.Index('idx_contact_created', 'created_at'),
+    )
+
+class DatabaseManager:
+    @staticmethod
+    def initialize_database(app, database_instance):
+        logger = logging.getLogger(__name__)
+        try:
+            logger.info("Initializing database...")
+            with app.app_context():
+                database_instance.create_all()
+                logger.info("Database tables created/verified successfully")
+        except Exception as e:
+            logger.error(f"Database initialization error: {str(e)}")
+            raise

@@ -33,7 +33,7 @@
         <div class="card billing-stat">
             <i class="fa-solid fa-credit-card"></i>
             <div>
-                <p class="stat-label">Total Settle Amount</p>
+                <p class="stat-label">Total Paid</p>
                 <p class="stat-value" id="billingTotalPaid">£0.00</p>
             </div>
         </div>
@@ -76,7 +76,7 @@
     <div class="payment-section animate-fadeIn">
         <h3 class="font-bold text-white tracking-wide flex items-center gap-2">
             <i class="fa-solid fa-shield-halved text-cyan-400"></i> SECURE PAYMENT TERMINAL
-        </h2>
+        </h3>
         <p class="text-slate-400 text-sm mb-6">Select an active contract balance below to process a secure installment or payment milestone using PayPal.</p>
 
         <div class="payment-form">
@@ -595,8 +595,7 @@ async function loadBillingPage() {
             result = await response.json();
         } catch (jsonError) {
             console.error('Billing response parse error:', jsonError);
-            const text = await response.text();
-            billingItemsContainer.innerHTML = `<div class="billing-empty"><p class="text-sm">Received invalid billing data.</p><pre class="text-xs text-left mt-3">${text}</pre></div>`;
+            billingItemsContainer.innerHTML = '<div class="billing-empty"><p class="text-sm">Received invalid billing data.</p></div>';
             return;
         }
 
@@ -611,7 +610,7 @@ async function loadBillingPage() {
         allProjects = projects;
 
         const sortedProjects = sortProjects(allProjects);
-        const active = sortedProjects.filter(p => p.status !== 'Completed');
+        const active = sortedProjects.filter(p => String(p.status || '').toLowerCase() !== 'completed');
         const totalPaid = sortedProjects.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
         const totalPrice = sortedProjects.reduce((sum, p) => sum + Number(p.price || 0), 0);
         const outstanding = Math.max(totalPrice - totalPaid, 0);
@@ -619,10 +618,6 @@ async function loadBillingPage() {
         // Load invoices for additional billing information
         const invoices = await loadClientInvoices();
         const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue');
-        const pendingInvoiceAmount = pendingInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-        const paidInvoices = invoices.filter(inv => inv.status === 'paid');
-        const paidInvoiceAmount = paidInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-
         // Update indicators
         document.getElementById('billingTotalDue').textContent = `£${totalPrice.toFixed(2)}`;
         document.getElementById('billingTotalPaid').textContent = `£${totalPaid.toFixed(2)}`;
@@ -674,7 +669,9 @@ function renderBillingProjects() {
         const paid = Number(project.amount_paid || 0);
         const price = Number(project.price || 0);
         const due = Math.max(price - paid, 0);
-        const statusClass = project.status === 'Completed' ? 'badge-completed' : project.status === 'Pending' ? 'badge-pending' : 'badge-active';
+        const status = project.status || 'Active';
+        const statusKey = status.toLowerCase();
+        const statusClass = statusKey === 'completed' ? 'badge-completed' : statusKey.startsWith('pending') ? 'badge-pending' : 'badge-active';
 
         return `
             <div class="billing-card animate-fadeIn">
@@ -682,7 +679,7 @@ function renderBillingProjects() {
                     <h4>${project.title || 'Draft Statement Card'}</h4>
                     <div class="detail">${project.desc || 'Operational software development statement record.'}</div>
                     <div class="balances">
-                        <span class="badge ${statusClass}">${project.status || 'Active'}</span>
+                        <span class="badge ${statusClass}">${status}</span>
                         <span class="badge">Value: £${price.toFixed(2)}</span>
                         <span class="badge">Settled: £${paid.toFixed(2)}</span>
                         <span class="badge">Due: £${due.toFixed(2)}</span>
@@ -783,20 +780,11 @@ function loadPayPalProjectsDropdown() {
 
 // Load invoice data for client billing page
 async function loadClientInvoices() {
-    try {
-        const response = await fetch('/api/invoices');
-        
-        if (response.status === 401 || response.status === 403) {
-            console.warn("Unable to load invoices - authentication required");
-            return [];
-        }
-        
-        const result = await response.json();
-        return result.invoices || [];
-    } catch (error) {
-        console.error('Error fetching invoices:', error);
-        return [];
-    }
+    const response = await fetch('/api/invoices');
+    if (!response.ok) throw new Error(`Invoice service unavailable (${response.status})`);
+    const result = await response.json();
+    if (!result || !Array.isArray(result.invoices)) throw new Error("Unexpected invoice response");
+    return result.invoices;
 }
 
 // Live update of payment snapshot panel upon choice change
@@ -816,7 +804,7 @@ function updateProjectDetails() {
         document.getElementById('detail-price').textContent = `£${parseFloat(project.price || 0).toFixed(2)}`;
         document.getElementById('detail-paid').textContent = `£${parseFloat(project.amount_paid || 0).toFixed(2)}`;
         
-        const outstanding = parseFloat(project.price || 0) - parseFloat(project.amount_paid || 0);
+        const outstanding = Math.max(parseFloat(project.price || 0) - parseFloat(project.amount_paid || 0), 0);
         document.getElementById('detail-outstanding').textContent = `£${outstanding.toFixed(2)}`;
         
         projectDetailsDiv.classList.remove('hidden');

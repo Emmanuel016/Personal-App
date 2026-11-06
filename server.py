@@ -34,6 +34,17 @@ from sqlalchemy import text
 # Import Database Schema & Manager
 from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, ContactMessage, DatabaseManager
 
+SERVICE_CATALOG = (
+    {"id": 1, "name": "Application Development", "description": "", "price": 2500, "icon": "fa-laptop-code"},
+    {"id": 2, "name": "Database Development", "description": "", "price": 1000, "icon": "fa-database"},
+    {"id": 3, "name": "Web Development", "description": "", "price": 2000, "icon": "fa-code"},
+    {"id": 4, "name": "Graphic Design", "description": "", "price": 500, "icon": "fa-palette"},
+    {"id": 5, "name": "Video Editing", "description": "", "price": 250, "icon": "fa-video"},
+    {"id": 6, "name": "Software Testing", "description": "", "price": 600, "icon": "fa-bug"},
+    {"id": 7, "name": "Logo Design", "description": "", "price": 150, "icon": "fa-pen-nib"},
+    {"id": 8, "name": "UI/UX Design", "description": "", "price": 100, "icon": "fa-wand-magic-sparkles"},
+)
+
 # Load .env configurations
 load_dotenv()
 
@@ -1404,7 +1415,7 @@ class EmmaServer:
         
         return render_template("client_portal.html")
     def client_register(self): return render_template("client_register.html")
-    def services_api(self): return jsonify([{"id": s.id, "name": s.name, "description": s.description, "price": s.price, "icon": s.icon} for s in Service.query.all()])
+    def services_api(self): return jsonify(SERVICE_CATALOG)
     def services_page(self): return render_template("services.html", services=Service.query.all())
     def client_billing(self): return render_template("client_billing.html")
     def order_page(self): return render_template("client_order.html")
@@ -1496,7 +1507,6 @@ class EmmaServer:
             description = SecurityManager.sanitize_input(request.form.get("description", ""))
             budget = SecurityManager.sanitize_input(request.form.get("budget", ""))
             deadline_str = SecurityManager.sanitize_input(request.form.get("deadline", ""))
-            price_str = request.form.get("price", "0")
             uploaded_files = request.files.getlist('files')
         else:
             data = request.json or {}
@@ -1504,13 +1514,16 @@ class EmmaServer:
             description = SecurityManager.sanitize_input(data.get("description", ""))
             budget = SecurityManager.sanitize_input(data.get("budget", ""))
             deadline_str = SecurityManager.sanitize_input(data.get("deadline", ""))
-            price_str = data.get("price", "0")
             uploaded_files = []
-        
-        try: price = float(price_str)
-        except: return jsonify({"error": "Invalid price format"}), 400
 
         if not service_name or len(service_name) > 255: return jsonify({"error": "Invalid service name"}), 400
+        service = next((item for item in SERVICE_CATALOG if item["name"] == service_name), None)
+        if not service:
+            return jsonify({"error": "Please select a service from the current catalog"}), 400
+        if len(description.strip()) < 10:
+            return jsonify({"error": "Please provide a project brief of at least 10 characters"}), 400
+
+        price = service["price"]
 
         # Validate deadline if provided
         deadline = None
@@ -1550,7 +1563,26 @@ class EmmaServer:
                     self.logger.error(f"Failed to save file: {str(e)}")
 
         db.session.commit()
-        return jsonify({"status": "success", "message": "Order transmitted successfully."})
+        for admin in User.query.filter(db.func.lower(User.role) == "admin").all():
+            self.comms.send_notification(
+                admin.id,
+                "new_order",
+                "New Client Order",
+                f"{current_username} submitted an order for '{service_name}'.",
+                {"project_id": new_project.id, "message_id": msg.id},
+                target_role="admin"
+            )
+
+        return jsonify({
+            "status": "success",
+            "message": "Order transmitted successfully.",
+            "project": {
+                "id": new_project.id,
+                "title": new_project.title,
+                "price": price,
+                "status": new_project.status
+            }
+        })
 
     def get_projects(self):
         role = session.get("role", "client")
@@ -1987,7 +2019,7 @@ class EmmaServer:
                         "client_email": i.client.email if i.client else None,
                         "project_price": float(i.project.price) if i.project and i.project.price else 0.0,
                         "amount_paid": float(i.project.amount_paid) if i.project and i.project.amount_paid else 0.0,
-                        "balance": float(i.project.price - i.project.amount_paid) if i.project and i.project.price else 0.0,
+                        "balance": max(float(i.project.price or 0) - float(i.project.amount_paid or 0), 0.0) if i.project else 0.0,
                         "created_at": i.created_at.isoformat() if i.created_at else None,
                         "paid_at": i.paid_at.isoformat() if i.paid_at else None,
                         "is_overdue": i.due_date and i.due_date < date.today() and i.status != 'paid'

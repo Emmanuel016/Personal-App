@@ -325,6 +325,8 @@ The app exposes JSON APIs for dashboard data, projects, clients, messages, files
 | --- | --- | --- |
 | `/api/orders` | `POST` | Place a client service order and upload optional files. |
 
+Both order pages load the same server-side service catalog. The server owns the recorded contract price and notifies admins when a client order is submitted.
+
 ### Clients and Messages
 
 | Endpoint | Methods | Purpose |

@@ -1008,16 +1008,15 @@ Get available services.
 
 **Response**:
 ```json
-{
-  "services": [
-    {
-      "id": 1,
-      "name": "Web Development",
-      "description": "Custom web development services",
-      "price": 1000.00
-    }
-  ]
-}
+[
+  {
+    "id": 1,
+    "name": "Application Development",
+    "description": "",
+    "price": 2500,
+    "icon": "fa-laptop-code"
+  }
+]
 ```
 
 ---
@@ -1092,17 +1091,26 @@ Place a new order.
 **Request Body**:
 ```json
 {
-  "service_id": 1,
-  "description": "Order description",
-  "budget": 1000.00
+  "service_name": "Application Development",
+  "description": "A detailed project brief",
+  "budget": "Optional budget estimate",
+  "deadline": "2026-12-01"
 }
 ```
+
+The endpoint also accepts these fields as multipart form data with optional `files` attachments. The server validates the selected service against the catalog and sets the project price; client-submitted prices are ignored.
 
 **Response**:
 ```json
 {
   "status": "success",
-  "order_id": 1
+  "message": "Order transmitted successfully.",
+  "project": {
+    "id": 1,
+    "title": "Application Development",
+    "price": 2500,
+    "status": "Pending Approval"
+  }
 }
 ```
 
