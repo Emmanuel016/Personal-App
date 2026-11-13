@@ -92,3 +92,5 @@ config_local.py
 # Documentation drafts
 *_draft.md
 *_notes.md
+research.py
+*.md
