@@ -340,7 +340,11 @@ class SecurityManager:
             if not user_id:
                 logger.warning(f"Unauthorized access attempt blocked from IP {get_remote_address()} on route {request.path}")
                 if request.is_json or request.path.startswith('/api/'):
-                    return jsonify({"error": "Unauthorized"}), 401
+                    return jsonify({
+                        "error": "Authentication required",
+                        "message": "You must be logged in to access this resource. Please sign in or create an account, then try again.",
+                        "login_required": True
+                    }), 401
                 return redirect(url_for("login"))
             
             user = db.session.get(User, user_id)
@@ -1514,8 +1518,7 @@ class EmmaServer:
             description = SecurityManager.sanitize_input(data.get("description", ""))
             budget = SecurityManager.sanitize_input(data.get("budget", ""))
             deadline_str = SecurityManager.sanitize_input(data.get("deadline", ""))
-            uploaded_files = []
-
+            uploaded_files = []        
         if not service_name or len(service_name) > 255: return jsonify({"error": "Invalid service name"}), 400
         service = next((item for item in SERVICE_CATALOG if item["name"] == service_name), None)
         if not service:

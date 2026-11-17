@@ -66,6 +66,20 @@
                         <small class="text-cyan-400 mt-1 block font-mono text-xs">⚠ Must be at least 3 days from today</small>
                     </div>
                 </div>
+                <div id="authNotice" class="hidden mt-4 p-4 rounded border border-red-500/40 bg-red-500/10">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-lock mt-1 text-red-400"></i>
+                        <div class="flex-1">
+                            <p class="font-semibold text-white mb-1 text-sm">SIGN IN REQUIRED</p>
+                            <p id="authNoticeMsg" class="text-gray-300 mb-3 text-sm">You must be logged in to place an order.</p>
+                            <div class="flex flex-wrap gap-3">
+                                <a href="/login" class="btn-primary px-4 py-2 text-sm inline-block">Sign In</a>
+                                <a href="/register" class="px-4 py-2 text-sm border border-cyan-400/50 rounded text-cyan-300 hover:bg-cyan-400/10 inline-block">Create Account</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Glow Styled Cyberpunk Button -->
                 <button class="btn-primary mt-8 w-full py-4 text-base font-bold flex items-center justify-center gap-3 transition-all duration-300" id="dispatchBtn" onclick="submitOrder()">
                     <i class="fa-solid fa-paper-plane"></i> DISPATCH PROJECT REQUEST
@@ -614,6 +628,9 @@ function formatFileSize(bytes) {
 }
 
 async function submitOrder() {
+    const authNotice = document.getElementById("authNotice");
+    if (authNotice) authNotice.classList.add("hidden");
+
     if (!selectedService) {
         showWarning("Please select a service from the grid above.");
         return;
@@ -641,6 +658,18 @@ async function submitOrder() {
         }
     }
 
+    // Verify the user is still signed in before dispatching
+    try {
+        const authRes = await fetch('/api/loggedin', { method: 'GET' });
+        const authData = await authRes.json().catch(() => ({}));
+        if (authData.status !== 'success') {
+            showAuthRequired("Your session has expired or you are no longer signed in. Your details are still filled in — please sign in again, then press the dispatch button.");
+            return;
+        }
+    } catch (e) {
+        // If the check itself fails, let the POST request handle authentication
+    }
+
     const btn = document.getElementById("dispatchBtn");
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ENCRYPTING & SENDING...`;
@@ -663,8 +692,12 @@ async function submitOrder() {
 
         // Handle authentication errors
         if (response.status === 401 || response.status === 403) {
-            console.error("Authentication required for order submission");
-            showWarning("Please sign in again before submitting your order.");
+            let authMessage = "Your session has expired or you are no longer signed in.";
+            try {
+                const errBody = await response.json();
+                if (errBody && errBody.message) authMessage = errBody.message;
+            } catch (_) { /* keep default message */ }
+            showAuthRequired(authMessage);
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> RETRY DISPATCH`;
             return;
@@ -696,6 +729,15 @@ async function submitOrder() {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> RETRY DISPATCH`;
     }
+}
+
+function showAuthRequired(message) {
+    const notice = document.getElementById("authNotice");
+    if (!notice) return;
+    const msgEl = document.getElementById("authNoticeMsg");
+    if (msgEl) msgEl.textContent = message || "You must be logged in to place an order.";
+    notice.classList.remove("hidden");
+    notice.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 // Warning message function
