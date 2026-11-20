@@ -24,6 +24,7 @@ Disallow: /api/notifications
 
 # Allow public pages
 Allow: /services
+Allow: /showcase
 Allow: /contact
 Allow: /cookie-policy
 Allow: /portfolio

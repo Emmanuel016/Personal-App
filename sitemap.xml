@@ -39,6 +39,22 @@
         <priority>0.7</priority>
     </url>
     
+    <!-- Project Showcase Gallery -->
+    <url>
+        <loc>https://emma-studio.onrender.com/showcase</loc>
+        <lastmod>2026-11-20</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Public Testimonials Gallery -->
+    <url>
+        <loc>https://emma-studio.onrender.com/testimonials</loc>
+        <lastmod>2026-11-20</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
     <!-- Cookie Policy Page -->
     <url>
         <loc>https://emma-studio.onrender.com/cookie-policy</loc>

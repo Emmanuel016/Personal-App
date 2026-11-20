@@ -17,7 +17,7 @@ let reconnectDelay = 1000;
 function initializeWebSocket() {
     if (typeof io !== 'undefined') {
         socket = io({
-            transports: ['websocket', 'polling'],  // Prefer WebSocket, keep polling as fallback
+            transports: ['polling', 'websocket'],  // Connect via polling first, then upgrade to WebSocket when supported (dev server is polling-only)
             upgrade: true,  // Allow Engine.IO to upgrade from polling when needed
             reconnection: true,
             reconnectionAttempts: maxReconnectAttempts,
@@ -652,6 +652,14 @@ async function loadProjects() {
                         <button onclick="addPayment(${p.id})" style="padding: 0 10px; font-size: 11px; height: 30px; background: #00f2fe; color: #0a192f; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Process</button>
                     </div>
                 </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                    <input type="file" id="deliverInput-${p.id}" multiple style="display: none;" onchange="uploadDeliverables(${p.id}, this)">
+                    <button onclick="document.getElementById('deliverInput-${p.id}').click()" style="padding: 6px 14px; font-size: 11px; height: 30px; background: rgba(0,242,254,0.12); color: #00f2fe; border: 1px solid rgba(0,242,254,0.4); border-radius: 4px; font-weight: bold; cursor: pointer;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Deliverables
+                    </button>
+                    <span style="font-size: 10px; color: #64748b;">Finished files are sent to the client's portal &amp; they get notified.</span>
+                </div>
             `;
 
             list.appendChild(li);
@@ -663,6 +671,37 @@ async function loadProjects() {
     }
 }
 
+
+async function uploadDeliverables(projectId, input) {
+    if (!input || !input.files || !input.files.length) return;
+    const btn = input.previousElementSibling;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...'; }
+
+    const fd = new FormData();
+    Array.from(input.files).forEach(f => fd.append('files', f));
+
+    try {
+        const res = await fetch(`/api/projects/${projectId}/deliverables`, { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === 'success') {
+            if (window.showGlobalNotification) {
+                window.showGlobalNotification('Success', `${data.files.length} deliverable file(s) sent to the client.`, 'success');
+            } else {
+                alert(`Uploaded ${data.files.length} file(s) to the client.`);
+            }
+            loadProjects();
+        } else {
+            alert(data.error || 'Deliverable upload failed.');
+        }
+    } catch (err) {
+        console.error('Deliverable upload failed:', err);
+        alert('Deliverable upload failed. Please try again.');
+    } finally {
+        input.value = '';
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml || '<i class="fa-solid fa-cloud-arrow-up"></i> Upload Deliverables'; }
+    }
+}
 
 async function loadClients() {
     const list = document.getElementById("clientList");

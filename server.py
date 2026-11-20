@@ -1,6 +1,7 @@
 #type: ignore
 import os
 import re
+import json
 import secrets
 import bcrypt
 import logging
@@ -32,17 +33,17 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import text
 
 # Import Database Schema & Manager
-from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, ContactMessage, DatabaseManager
+from models import db, User, Project, Message, Service, Feedback, FileAttachment, Notification, NotificationPreference, Invoice, PasswordResetToken, ContactMessage, ShowcaseProject, Testimonial, DatabaseManager
 
 SERVICE_CATALOG = (
     {"id": 1, "name": "Application Development", "description": "", "price": 2500, "icon": "fa-laptop-code"},
     {"id": 2, "name": "Database Development", "description": "", "price": 1000, "icon": "fa-database"},
-    {"id": 3, "name": "Web Development", "description": "", "price": 2000, "icon": "fa-code"},
-    {"id": 4, "name": "Graphic Design", "description": "", "price": 500, "icon": "fa-palette"},
-    {"id": 5, "name": "Video Editing", "description": "", "price": 250, "icon": "fa-video"},
-    {"id": 6, "name": "Software Testing", "description": "", "price": 600, "icon": "fa-bug"},
-    {"id": 7, "name": "Logo Design", "description": "", "price": 150, "icon": "fa-pen-nib"},
-    {"id": 8, "name": "UI/UX Design", "description": "", "price": 100, "icon": "fa-wand-magic-sparkles"},
+    {"id": 3, "name": "Software Testing", "description": "", "price": 600, "icon": "fa-bug"},
+    {"id": 4, "name": "Web Development", "description": "", "price": 2000, "icon": "fa-code"},
+    {"id": 5, "name": "Graphic Design", "description": "", "price": 500, "icon": "fa-palette"},
+    {"id": 6, "name": "Video Editing", "description": "", "price": 200, "icon": "fa-video"},
+    {"id": 7, "name": "Logo Design", "description": "", "price": 100, "icon": "fa-pen-nib"},
+    {"id": 8, "name": "UI/UX Design", "description": "", "price": 50, "icon": "fa-wand-magic-sparkles"},
 )
 
 # Load .env configurations
@@ -942,6 +943,28 @@ class EmmaServer:
         self.bind_route("/client/register", self.client_register, auth='login')
         self.bind_route("/api/services", self.services_api, limit=self.api_limiter)
         self.bind_route("/services", self.services_page)
+        self.bind_route("/showcase", self.showcase_page, auth='login')
+        self.bind_route("/showcase/media/<filename>", self.showcase_media)
+        self.bind_route("/showcase/file/<filename>", self.showcase_file_download)
+        self.bind_route("/api/showcase", self.showcase_api, limit=self.api_limiter, auth='login', endpoint="showcase_api_list")
+        self.bind_route("/api/showcase/<int:project_id>", self.showcase_api, auth='login', endpoint="showcase_api_detail")
+        self.bind_route("/admin/showcase", self.showcase_admin_page, auth='login', admin=True)
+        self.bind_route("/api/admin/showcase", self.admin_showcase_list, auth='login', admin=True, endpoint="admin_showcase_list")
+        self.bind_route("/api/admin/showcase", self.admin_showcase_save, methods=["POST"], auth='login', admin=True, endpoint="admin_showcase_create")
+        self.bind_route("/api/admin/showcase/<int:project_id>", self.admin_showcase_save, methods=["POST"], auth='login', admin=True, endpoint="admin_showcase_update")
+        self.bind_route("/api/admin/showcase/<int:project_id>", self.admin_showcase_delete, methods=["DELETE"], auth='login', admin=True)
+        
+        # Testimonials (public gallery + admin management + client submission)
+        self.bind_route("/testimonials", self.testimonials_page)
+        self.bind_route("/api/testimonials", self.testimonials_api, limit=self.api_limiter)
+        self.bind_route("/api/testimonials/<int:testimonial_id>", self.testimonials_api_detail, limit=self.api_limiter)
+        self.bind_route("/admin/testimonials", self.testimonials_admin_page, auth='login', admin=True)
+        self.bind_route("/api/admin/testimonials", self.admin_testimonials_list, auth='login', admin=True, endpoint="admin_testimonials_list")
+        self.bind_route("/api/admin/testimonials", self.admin_testimonials_save, methods=["POST"], auth='login', admin=True, endpoint="admin_testimonials_create")
+        self.bind_route("/api/admin/testimonials/<int:testimonial_id>", self.admin_testimonials_save, methods=["POST"], auth='login', admin=True, endpoint="admin_testimonials_update")
+        self.bind_route("/api/admin/testimonials/<int:testimonial_id>", self.admin_testimonials_delete, methods=["DELETE"], auth='login', admin=True)
+        self.bind_route("/api/client/testimonials", self.client_testimonial_submit, methods=["POST"], auth='login')
+        
         self.bind_route("/client_billing", self.client_billing, auth='login')
         self.bind_route("/client/order", self.order_page, auth='login')
         self.bind_route("/client_feedback", self.client_feedback, auth='login')
@@ -972,6 +995,7 @@ class EmmaServer:
         self.bind_route("/api/projects", self.create_project, methods=["POST"], auth='login')
         self.bind_route("/api/projects/<int:project_id>", self.update_project, methods=["PATCH"], auth='login', admin=True)
         self.bind_route("/api/projects/<int:project_id>/payment", self.update_payment, methods=["POST"], auth='login', admin=True)
+        self.bind_route("/api/projects/<int:project_id>/deliverables", self.upload_project_deliverables, methods=["POST"], auth='login', admin=True)
         self.bind_route("/api/projects/<int:project_id>", self.delete_project, methods=["DELETE"], auth='login', admin=True)
         
         self.bind_route("/api/payment/submit", self.submit_payment, methods=["POST"], auth='login')
@@ -1421,6 +1445,216 @@ class EmmaServer:
     def client_register(self): return render_template("client_register.html")
     def services_api(self): return jsonify(SERVICE_CATALOG)
     def services_page(self): return render_template("services.html", services=Service.query.all())
+
+    # --- Showcase (public project gallery) ---
+    SHOWCASE_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif', '.bmp'}
+
+    def _showcase_dir(self):
+        d = self.config.UPLOADS_DIR / "showcase"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _showcase_media_path(self, filename):
+        safe = secure_filename(filename or "")
+        if not safe or not re.match(r'^\d{8}_\d{6}_[a-f0-9]+_', safe):
+            return None
+        path = (self._showcase_dir() / safe).resolve()
+        base = self._showcase_dir().resolve()
+        if not path.is_relative_to(base) or not path.exists():
+            return None
+        return path
+
+    def _save_showcase_upload(self, file_obj):
+        if not file_obj or not file_obj.filename:
+            return None
+        original = secure_filename(file_obj.filename)
+        if not original:
+            return None
+        stored = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{original}"
+        path = self._showcase_dir() / stored
+        file_obj.save(str(path))
+        return {"stored": stored, "name": original, "size": file_obj.content_length or path.stat().st_size}
+
+    def _delete_showcase_files(self, entries):
+        for entry in entries or []:
+            stored = entry.get("stored") if isinstance(entry, dict) else entry
+            path = self._showcase_media_path(stored)
+            if path:
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+
+    @staticmethod
+    def _serialize_showcase(p, detail=False):
+        client = db.session.get(User, p.client_user_id) if p.client_user_id else None
+        data = {
+            "id": p.id,
+            "client_user_id": p.client_user_id,
+            "client_name": client.username if client else "",
+            "title": p.title,
+            "category": p.category or "General",
+            "description": p.description or "",
+            "client_label": p.client_label or "",
+            "completed_date": p.completed_date.isoformat() if p.completed_date else None,
+            "is_published": bool(p.is_published),
+            "sort_order": p.sort_order or 0,
+            "image_count": len(p.images or []),
+            "cover": f"/showcase/media/{(p.images or [None])[0]}" if (p.images or []) else None,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        if detail:
+            data["images"] = [f"/showcase/media/{fn}" for fn in (p.images or [])]
+            data["image_files"] = list(p.images or [])
+            data["files"] = [
+                {"name": f.get("name", "file"), "size": f.get("size", 0), "stored": f.get("stored"), "url": f"/showcase/file/{f.get('stored')}"}
+                for f in (p.files or []) if f.get("stored")
+            ]
+        return data
+
+    def showcase_page(self):
+        return render_template("showcase.html")
+
+    def showcase_admin_page(self):
+        return render_template("showcase_admin.html")
+
+    def _showcase_file_owner(self, stored_filename):
+        """Return the client_user_id that owns a showcase media/file, or None."""
+        for p in ShowcaseProject.query.all():
+            if stored_filename in (p.images or []):
+                return p.client_user_id
+            if any(f.get("stored") == stored_filename for f in (p.files or [])):
+                return p.client_user_id
+        return None
+
+    def _can_view_showcase(self, owner_id):
+        return session.get("role", "client").lower() == "admin" or session.get("user_id") == owner_id
+
+    def showcase_api(self, project_id=None):
+        if project_id is None:
+            query = ShowcaseProject.query.filter_by(is_published=True)
+            if session.get("role", "client").lower() != "admin":
+                query = query.filter_by(client_user_id=session.get("user_id"))
+            items = query.order_by(ShowcaseProject.sort_order.desc(), ShowcaseProject.created_at.desc()).all()
+            return jsonify([self._serialize_showcase(p) for p in items])
+        p = db.session.get(ShowcaseProject, project_id)
+        if not p or not p.is_published or not self._can_view_showcase(p.client_user_id):
+            return jsonify({"error": "Not found"}), 404
+        return jsonify(self._serialize_showcase(p, detail=True))
+
+    def showcase_media(self, filename):
+        path = self._showcase_media_path(filename)
+        if not path or path.suffix.lower() not in self.SHOWCASE_IMAGE_EXTENSIONS:
+            abort(404)
+        owner = self._showcase_file_owner(secure_filename(filename))
+        if owner is None or not self._can_view_showcase(owner):
+            abort(403)
+        return send_file(str(path), conditional=True, max_age=86400)
+
+    def showcase_file_download(self, filename):
+        stored = secure_filename(filename or "")
+        if not stored:
+            abort(404)
+        for p in ShowcaseProject.query.all():
+            for f in (p.files or []):
+                if f.get("stored") == stored:
+                    if not self._can_view_showcase(p.client_user_id):
+                        abort(403)
+                    path = self._showcase_media_path(stored)
+                    if path:
+                        return send_file(str(path), as_attachment=True, download_name=f.get("name", stored), mimetype="application/octet-stream", conditional=True)
+        abort(404)
+
+    def admin_showcase_list(self):
+        items = ShowcaseProject.query.order_by(ShowcaseProject.sort_order.desc(), ShowcaseProject.created_at.desc()).all()
+        return jsonify([self._serialize_showcase(p, detail=True) for p in items])
+
+    def admin_showcase_save(self, project_id=None):
+        is_update = project_id is not None
+        p = db.session.get(ShowcaseProject, project_id) if is_update else ShowcaseProject()
+        if is_update and not p:
+            return jsonify({"error": "Not found"}), 404
+
+        title = SecurityManager.sanitize_input(request.form.get("title", "")).strip()
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+        p.title = title[:255]
+        p.category = SecurityManager.sanitize_input(request.form.get("category", "General")).strip()[:100] or "General"
+        p.description = SecurityManager.sanitize_input(request.form.get("description", ""))
+        p.client_label = SecurityManager.sanitize_input(request.form.get("client_label", "")).strip()[:150]
+        client_id_raw = request.form.get("client_user_id", "").strip()
+        if client_id_raw:
+            try:
+                cid = int(client_id_raw)
+                owner = db.session.get(User, cid)
+                if not owner:
+                    return jsonify({"error": "Selected client does not exist"}), 400
+                p.client_user_id = cid
+            except ValueError:
+                return jsonify({"error": "Invalid client selection"}), 400
+        else:
+            p.client_user_id = None
+        try:
+            p.sort_order = int(request.form.get("sort_order", 0) or 0)
+        except ValueError:
+            p.sort_order = 0
+        p.is_published = request.form.get("is_published", "1") in ("1", "true", "on", "yes")
+        completed = request.form.get("completed_date", "").strip()
+        if completed:
+            try:
+                p.completed_date = datetime.strptime(completed, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({"error": "Invalid completed_date format (use YYYY-MM-DD)"}), 400
+        else:
+            p.completed_date = None
+
+        # Merge kept + newly uploaded images
+        try:
+            keep_images = set(json.loads(request.form.get("keep_images", "[]")))
+        except (ValueError, TypeError):
+            keep_images = set()
+        images = [fn for fn in (p.images or []) if fn in keep_images] if is_update else []
+        removed_images = [fn for fn in (p.images or []) if fn not in keep_images] if is_update else []
+        for entry in self._save_showcase_uploads_batch(request.files.getlist("images")):
+            images.append(entry["stored"])
+        # Store images as plain filename list
+        p.images = images
+        self._delete_showcase_files([{"stored": fn} for fn in removed_images])
+
+        # Merge kept + newly uploaded downloadable files
+        try:
+            keep_files = set(json.loads(request.form.get("keep_files", "[]")))
+        except (ValueError, TypeError):
+            keep_files = set()
+        files = [f for f in (p.files or []) if f.get("stored") in keep_files] if is_update else []
+        removed_files = [f for f in (p.files or []) if f.get("stored") not in keep_files] if is_update else []
+        files.extend(self._save_showcase_uploads_batch(request.files.getlist("files")))
+        p.files = files
+        self._delete_showcase_files(removed_files)
+
+        if not is_update:
+            db.session.add(p)
+        db.session.commit()
+        return jsonify({"status": "success", "project": self._serialize_showcase(p, detail=True)})
+
+    def _save_showcase_uploads_batch(self, file_list):
+        saved = []
+        for f in file_list:
+            entry = self._save_showcase_upload(f)
+            if entry:
+                saved.append(entry)
+        return saved
+
+    def admin_showcase_delete(self, project_id):
+        p = db.session.get(ShowcaseProject, project_id)
+        if not p:
+            return jsonify({"error": "Not found"}), 404
+        self._delete_showcase_files([{"stored": fn} for fn in (p.images or [])])
+        self._delete_showcase_files(p.files or [])
+        db.session.delete(p)
+        db.session.commit()
+        return jsonify({"status": "success"})
+
     def client_billing(self): return render_template("client_billing.html")
     def order_page(self): return render_template("client_order.html")
     def client_feedback(self): return render_template("client_feedback.html")
@@ -1486,6 +1720,143 @@ class EmmaServer:
     def get_profile(self): return jsonify({"name": "Emmanuel Ugwu", "headline": "Expert Freelance Software Developer", "services": [{"name": "Application Development"}]})
     def clients_page(self): return render_template("clients.html")
     def projects_page(self): return render_template("projects.html")
+
+    # ============ TESTIMONIALS ============
+    def testimonials_page(self):
+        return render_template("testimonials.html")
+
+    def testimonials_api(self):
+        items = Testimonial.query.filter_by(is_published=True).order_by(Testimonial.sort_order.desc(), Testimonial.created_at.desc()).all()
+        return jsonify([self._serialize_testimonial(t) for t in items])
+
+    def testimonials_api_detail(self, testimonial_id):
+        t = db.session.get(Testimonial, testimonial_id)
+        if not t or not t.is_published:
+            return jsonify({"error": "Not found"}), 404
+        return jsonify(self._serialize_testimonial(t))
+
+    def testimonials_admin_page(self):
+        return render_template("testimonials_admin.html")
+
+    def admin_testimonials_list(self):
+        items = Testimonial.query.order_by(Testimonial.sort_order.desc(), Testimonial.created_at.desc()).all()
+        return jsonify([self._serialize_testimonial(t) for t in items])
+
+    def admin_testimonials_save(self, testimonial_id=None):
+        is_update = testimonial_id is not None
+        t = db.session.get(Testimonial, testimonial_id) if is_update else Testimonial()
+        
+        client_name = request.form.get("client_name", "").strip()
+        testimonial_text = request.form.get("testimonial_text", "").strip()
+        rating = request.form.get("rating")
+        project_service = request.form.get("project_service", "").strip()
+        testimonial_date_str = request.form.get("testimonial_date", "").strip()
+        is_published = request.form.get("is_published") == "1"
+        sort_order = request.form.get("sort_order", type=int) or 0
+        
+        if not client_name:
+            return jsonify({"error": "Client name is required"}), 400
+        if not project_service:
+            return jsonify({"error": "Project/service is required"}), 400
+        if not testimonial_date_str:
+            return jsonify({"error": "Testimonial date is required"}), 400
+        
+        try:
+            from datetime import datetime
+            testimonial_date = datetime.strptime(testimonial_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
+        
+        if rating:
+            try:
+                rating = int(rating)
+                if not 1 <= rating <= 5:
+                    return jsonify({"error": "Rating must be between 1 and 5"}), 400
+            except ValueError:
+                return jsonify({"error": "Invalid rating"}), 400
+        else:
+            rating = None
+        
+        t.client_name = client_name
+        t.testimonial_text = testimonial_text or None
+        t.rating = rating
+        t.project_service = project_service
+        t.testimonial_date = testimonial_date
+        t.is_published = is_published
+        t.sort_order = sort_order
+        
+        if not is_update:
+            # Link to logged-in client if they're submitting
+            if session.get("role", "client").lower() == "client":
+                t.client_user_id = session.get("user_id")
+            db.session.add(t)
+        
+        db.session.commit()
+        return jsonify({"status": "success", "id": t.id})
+
+    def admin_testimonials_delete(self, testimonial_id):
+        t = db.session.get(Testimonial, testimonial_id)
+        if not t:
+            return jsonify({"error": "Not found"}), 404
+        db.session.delete(t)
+        db.session.commit()
+        return jsonify({"status": "success"})
+
+    def client_testimonial_submit(self):
+        client_name = request.form.get("client_name", "").strip()
+        testimonial_text = request.form.get("testimonial_text", "").strip()
+        rating = request.form.get("rating")
+        project_service = request.form.get("project_service", "").strip()
+        testimonial_date_str = request.form.get("testimonial_date", "").strip()
+        
+        if not client_name:
+            return jsonify({"error": "Client name is required"}), 400
+        if not project_service:
+            return jsonify({"error": "Project/service is required"}), 400
+        if not testimonial_date_str:
+            return jsonify({"error": "Testimonial date is required"}), 400
+        
+        try:
+            from datetime import datetime
+            testimonial_date = datetime.strptime(testimonial_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
+        
+        if rating:
+            try:
+                rating = int(rating)
+                if not 1 <= rating <= 5:
+                    return jsonify({"error": "Rating must be between 1 and 5"}), 400
+            except ValueError:
+                return jsonify({"error": "Invalid rating"}), 400
+        else:
+            rating = None
+        
+        t = Testimonial(
+            client_user_id=session.get("user_id"),
+            client_name=client_name,
+            testimonial_text=testimonial_text or None,
+            rating=rating,
+            project_service=project_service,
+            testimonial_date=testimonial_date,
+            is_published=False  # Requires admin approval
+        )
+        db.session.add(t)
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Testimonial submitted for review"})
+
+    def _serialize_testimonial(self, t):
+        return {
+            "id": t.id,
+            "client_name": t.client_name,
+            "testimonial_text": t.testimonial_text,
+            "rating": t.rating,
+            "project_service": t.project_service,
+            "testimonial_date": t.testimonial_date.isoformat() if t.testimonial_date else None,
+            "is_published": t.is_published,
+            "sort_order": t.sort_order,
+            "created_at": t.created_at.isoformat() if t.created_at else None
+        }
 
     def dashboard_data(self):
         uid = session.get("user_id")
@@ -1958,6 +2329,62 @@ class EmmaServer:
                 logger.warning("Could not clean up failed upload %s", sf, exc_info=True)
             db.session.rollback()
             return jsonify({"error": f"File upload failed: {str(e)}"}), 500
+
+    def upload_project_deliverables(self, project_id):
+        project = db.session.get(Project, project_id)
+        if not project:
+            return jsonify({"error": "Project not found"}), 404
+
+        files = [f for f in request.files.getlist("files") if f and f.filename]
+        if not files:
+            return jsonify({"error": "No files provided"}), 400
+        for f in files:
+            if not SecurityManager.allowed_file(f.filename):
+                return jsonify({"error": f"File type not allowed: {f.filename}"}), 400
+
+        note = SecurityManager.sanitize_input(request.form.get("note", "")).strip()
+        msg = Message(
+            client_id=project.client_user_id,
+            project_id=project.id,
+            from_role="admin",
+            content=f"📦 DELIVERABLES: {len(files)} file(s) uploaded for '{project.title}'" + (f" — {note}" if note else "")
+        )
+        db.session.add(msg)
+        db.session.flush()
+
+        saved = []
+        try:
+            for f in files:
+                original = secure_filename(f.filename)
+                sf = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{original}"
+                file_path = self.config.UPLOADS_DIR / sf
+                f.save(str(file_path))
+                attachment = FileAttachment(
+                    message_id=msg.id,
+                    client_id=project.client_user_id,
+                    original_filename=original,
+                    stored_filename=sf,
+                    file_size=f.content_length or file_path.stat().st_size,
+                    mime_type=f.content_type,
+                    uploaded_by_role="admin"
+                )
+                db.session.add(attachment)
+                db.session.flush()
+                saved.append({"id": attachment.id, "original_filename": original, "download_url": f"/api/files/{attachment.id}/download"})
+            db.session.commit()
+        except Exception as e:
+            self.logger.error(f"Deliverable upload failed for project {project_id}: {str(e)}")
+            db.session.rollback()
+            return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+
+        self.comms.send_notification(
+            project.client_user_id,
+            "deliverable",
+            "New Project Deliverables",
+            f"'{project.title}' has {len(saved)} new file(s) ready for download.",
+            {"project_id": project.id}
+        )
+        return jsonify({"status": "success", "files": saved})
 
     def download_file(self, file_id):
         try:

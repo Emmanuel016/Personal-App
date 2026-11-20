@@ -224,6 +224,53 @@
                 </div>
             </div>
         </div>
+
+        <!-- Testimonial Submission Card -->
+        <div class="grid-col-4">
+            <div class="card glass-panel">
+                <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-weight: 700;">
+                        <i class="fa-solid fa-star"></i> SUBMIT TESTIMONIAL
+                    </h3>
+                    <span class="text-[10px] text-cyan-400 font-bold tracking-wider">Share your experience</span>
+                </div>
+                <div style="padding: 20px;">
+                    <form id="testimonialForm" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <label style="font-size: 11px; color: #8892b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block;">Your Name *</label>
+                            <input type="text" name="client_name" id="tClientName" required placeholder="Name to display publicly" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,254,0.18); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #8892b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block;">Project/Service *</label>
+                            <input type="text" name="project_service" id="tProject" required placeholder="e.g. UI/UX Design, Web App" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,254,0.18); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #8892b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block;">Testimonial Date *</label>
+                            <input type="date" name="testimonial_date" id="tDate" required style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,254,0.18); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #8892b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block;">Rating (1-5)</label>
+                            <div style="display: flex; gap: 8px;" id="tRatingInput">
+                                <button type="button" data-rating="1" style="background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">★</button>
+                                <button type="button" data-rating="2" style="background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">★</button>
+                                <button type="button" data-rating="3" style="background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">★</button>
+                                <button type="button" data-rating="4" style="background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">★</button>
+                                <button type="button" data-rating="5" style="background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">★</button>
+                                <input type="hidden" name="rating" id="tRating" value="">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #8892b0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block;">Your Review (optional)</label>
+                            <textarea name="testimonial_text" id="tText" placeholder="Share your experience..." style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,254,0.18); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                        </div>
+                        <button type="submit" style="background: linear-gradient(45deg, #00f2fe, #4facfe); color: #0a192f; border: none; padding: 10px 20px; border-radius: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; margin-top: 8px;">
+                            <i class="fa-solid fa-paper-plane"></i> Submit for Review
+                        </button>
+                        <div id="tStatusMsg" style="font-size: 12px; margin-top: 8px;"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1227,6 +1274,53 @@ document.addEventListener('change', function(e) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initSmartPolling();
+
+    // Rating input UI for testimonial form
+    document.querySelectorAll('#tRatingInput button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rating = btn.dataset.rating;
+            document.getElementById('tRating').value = rating;
+            document.querySelectorAll('#tRatingInput button').forEach(b => {
+                b.classList.toggle('active', b.dataset.rating <= rating);
+                b.style.background = b.dataset.rating <= rating ? '#00f2fe' : 'rgba(0,242,254,0.1)';
+                b.style.color = b.dataset.rating <= rating ? '#0a192f' : '#00f2fe';
+            });
+        });
+    });
+
+    // Testimonial form submission
+    document.getElementById('testimonialForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const msg = document.getElementById('tStatusMsg');
+        btn.disabled = true;
+        msg.textContent = '';
+        
+        const fd = new FormData(e.target);
+        try {
+            const res = await fetch('/api/client/testimonials', { method: 'POST', body: fd });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.status === 'success') {
+                msg.style.color = '#10b981';
+                msg.textContent = data.message || 'Testimonial submitted for review!';
+                e.target.reset();
+                document.getElementById('tRating').value = '';
+                document.querySelectorAll('#tRatingInput button').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'rgba(0,242,254,0.1)';
+                    b.style.color = '#00f2fe';
+                });
+            } else {
+                msg.style.color = '#ef4444';
+                msg.textContent = data.error || 'Submission failed.';
+            }
+        } catch (err) {
+            msg.style.color = '#ef4444';
+            msg.textContent = 'Submission failed: ' + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    });
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {

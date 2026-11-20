@@ -57,6 +57,17 @@
                 <h1 class="glow-text text-3xl font-bold tracking-wider text-white">EMMANUEL UGWU | FREELANCE PYTHON DEVELOPER & UI/UX SPECIALIST</h1>
                 <p class="text-cyan-400 text-sm">Freelance software development, web design, and digital experiences built with clean code, strong design thinking, and clear communication.</p>
             </header>
+            <div class="flex flex-wrap gap-3 mt-4">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 text-xs font-bold tracking-wider uppercase">
+                    <i class="fa-solid fa-tag"></i> Projects from £50
+                </span>
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-300 text-xs font-bold tracking-wider uppercase">
+                    <i class="fa-solid fa-bolt"></i> Response in under 24hrs
+                </span>
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-400/30 bg-purple-400/10 text-purple-300 text-xs font-bold tracking-wider uppercase">
+                    <i class="fa-solid fa-lock"></i> Secure client portal
+                </span>
+            </div>
         </div>
     </div>
 
@@ -203,6 +214,11 @@
                         <small class="text-cyan-400 mt-1 block font-mono text-xs">⚠ Must be at least 3 days from today</small>
                     </div>
                 </div>
+
+                <p class="text-gray-400 text-xs mt-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                    Projects start from <strong class="text-emerald-300">£50</strong> — we respond to every request in under <strong class="text-cyan-300">24 hours</strong>.
+                </p>
 
                 <div id="authNotice" class="hidden mt-4 p-4 rounded border border-red-500/40 bg-red-500/10">
                     <div class="flex items-start gap-3">
@@ -871,6 +887,18 @@ async function submitOrder() {
     }
 }
 
+async function checkAuthState() {
+    try {
+        const authRes = await fetch('/api/loggedin', { method: 'GET' });
+        const authData = await authRes.json().catch(() => ({}));
+        if (authData.status !== 'success') {
+            showAuthRequired("You're browsing as a guest. Sign in or create a free account to dispatch project requests — you can fill in the form first and sign in when you're ready.");
+        }
+    } catch (e) {
+        // If the check fails, the submit handler will catch it on dispatch
+    }
+}
+
 function showAuthRequired(message) {
     const notice = document.getElementById("authNotice");
     if (!notice) return;
@@ -893,6 +921,9 @@ function showWarning(msg) {
     }, 3500);
 }
 
-document.addEventListener("DOMContentLoaded", initServiceGrid);
+document.addEventListener("DOMContentLoaded", () => {
+    initServiceGrid();
+    checkAuthState();
+});
 </script>
 {% endblock %}

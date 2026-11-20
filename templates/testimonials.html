@@ -1,0 +1,83 @@
+{% extends "client_login.html" %}
+{% block content %}
+<style>
+.testimonials-page { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+.hero { text-align: center; margin-bottom: 48px; }
+.hero h1 { font-family: 'Rajdhani', sans-serif; font-size: 42px; font-weight: 700; color: #00f2fe; letter-spacing: 2px; margin: 0 0 16px; }
+.hero p { color: #94a3b8; font-size: 18px; max-width: 600px; margin: 0 auto; }
+.testimonials-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+.testimonial-card { background: rgba(10,25,47,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; position: relative; }
+.testimonial-card::before { content: '"'; position: absolute; top: 16px; left: 20px; font-size: 64px; color: rgba(0,242,254,0.15); font-family: Georgia, serif; line-height: 1; }
+.rating { color: #fbbf24; margin-bottom: 12px; font-size: 16px; }
+.quote { color: #e2e8f0; font-size: 16px; line-height: 1.6; margin-bottom: 20px; font-style: italic; min-height: 60px; }
+.client-info { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+.client-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #00f2fe, #4facfe); display: flex; align-items: center; justify-content: center; color: #0a192f; font-weight: 700; font-size: 18px; }
+.client-details h4 { color: #fff; margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.client-details .service { color: #64748b; font-size: 13px; }
+.client-details .date { color: #475569; font-size: 12px; margin-top: 2px; }
+.empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+.empty-state i { font-size: 48px; color: rgba(0,242,254,0.3); margin-bottom: 16px; }
+</style>
+
+<div class="testimonials-page">
+    <div class="hero">
+        <h1>Client Testimonials</h1>
+        <p>What our clients say about working with EmmaStudio</p>
+    </div>
+    
+    <div class="testimonials-grid" id="testimonialsGrid">
+        <div class="empty-state">
+            <i class="fa-solid fa-quote-left"></i>
+            <p>Loading testimonials...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadTestimonials() {
+    try {
+        const res = await fetch('/api/testimonials');
+        const items = await res.json();
+        const grid = document.getElementById('testimonialsGrid');
+        
+        if (!items.length) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1/-1;">
+                    <i class="fa-solid fa-quote-left"></i>
+                    <p>No testimonials yet — check back soon!</p>
+                </div>`;
+            return;
+        }
+        
+        grid.innerHTML = items.map(t => {
+            const stars = t.rating ? '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) : '';
+            const initial = t.client_name.charAt(0).toUpperCase();
+            const dateStr = t.testimonial_date ? new Date(t.testimonial_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            
+            return `
+                <div class="testimonial-card">
+                    <div class="rating">${stars}</div>
+                    <p class="quote">${t.testimonial_text || 'Great work, highly recommended!'}</p>
+                    <div class="client-info">
+                        <div class="client-avatar">${initial}</div>
+                        <div class="client-details">
+                            <h4>${escapeHtml(t.client_name)}</h4>
+                            <div class="service">${escapeHtml(t.project_service)}</div>
+                            <div class="date">${dateStr}</div>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Failed to load testimonials:', e);
+        document.getElementById('testimonialsGrid').innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>Failed to load testimonials.</p></div>';
+    }
+}
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+document.addEventListener('DOMContentLoaded', loadTestimonials);
+</script>
+{% endblock %}

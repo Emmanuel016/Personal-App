@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.showcase-admin { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.admin-title { font-family: 'Rajdhani', sans-serif; font-size: 30px; font-weight: 700; color: #00f2fe; letter-spacing: 2px; margin: 0; }
+.btn-primary { background: linear-gradient(45deg, #00f2fe, #4facfe); color: #0a192f; border: none; padding: 10px 22px; border-radius: 10px; font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+.btn-primary:disabled { opacity: 0.6; cursor: wait; }
+.btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.card { background: rgba(10,25,47,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 22px; margin-bottom: 20px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 700; }
+.field input, .field textarea, .field select { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,254,0.18); border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 14px; }
+.field textarea { min-height: 90px; resize: vertical; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: #00f2fe; }
+.media-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0; }
+.media-thumb { position: relative; width: 90px; }
+.media-thumb img { width: 90px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0,242,254,0.25); }
+.media-thumb .rm { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ff003c; color: #fff; border: none; font-size: 11px; cursor: pointer; line-height: 1; }
+.file-tag { background: rgba(0,242,254,0.08); border: 1px solid rgba(0,242,254,0.2); color: #7dd3fc; padding: 5px 10px; border-radius: 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; }
+.file-tag button { background: none; border: none; color: #ff8fab; cursor: pointer; font-size: 13px; }
+.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.item-card { background: rgba(10,25,47,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+.item-card img { width: 100%; height: 140px; object-fit: cover; background: #020617; display: block; }
+.item-card .ph { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; background: rgba(0,242,254,0.05); color: #334155; font-size: 2rem; }
+.item-body { padding: 12px 14px 14px; }
+.item-title { color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.item-meta { font-size: 11px; color: #64748b; margin-bottom: 8px; }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.badge.pub { background: rgba(0,230,118,0.12); color: #00e676; border: 1px solid rgba(0,230,118,0.3); }
+.badge.draft { background: rgba(255,145,0,0.12); color: #ff9100; border: 1px solid rgba(255,145,0,0.3); }
+.item-actions { display: flex; gap: 8px; margin-top: 10px; }
+.item-actions button { flex: 1; padding: 7px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: #cbd5e1; font-size: 12px; cursor: pointer; }
+.item-actions button:hover { border-color: #00f2fe; color: #00f2fe; }
+.item-actions .del { color: #ff8fab; }
+.item-actions .del:hover { border-color: #ff003c; color: #ff003c; }
+#statusMsg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+.hint { font-size: 12px; color: #64748b; margin-top: 6px; }
+</style>
+
+<div class="showcase-admin">
+    <div class="admin-header">
+        <h1 class="admin-title"><i class="fa-solid fa-images"></i> PROJECT DELIVERY MANAGER</h1>
+        <button class="btn-primary" onclick="resetForm()"><i class="fa-solid fa-plus"></i> New Delivery</button>
+    </div>
+
+    <div class="card" id="editorCard">
+        <h3 style="color:#fff;font-family:'Rajdhani';letter-spacing:1px;margin-top:0;" id="editorTitle">Add Delivery</h3>
+        <form id="showcaseForm" enctype="multipart/form-data">
+            <input type="hidden" id="editId">
+            <div class="form-grid">
+                <div class="field"><label>Title *</label><input name="title" id="fTitle" required placeholder="e.g. Clinic Booking System"></div>
+                <div class="field"><label>Category</label><input name="category" id="fCategory" list="categoryOptions" placeholder="Web App, UI/UX, Branding..." autocomplete="off"><datalist id="categoryOptions"></datalist></div>
+                <div class="field"><label>Client (owner) *</label><select name="client_user_id" id="fClientId" required><option value="">Select a client...</option></select></div>
+                <div class="field"><label>Client label</label><input name="client_label" id="fClient" placeholder="Display name shown to the client"></div>
+                <div class="field"><label>Completed date</label><input name="completed_date" id="fDate" type="date"></div>
+                <div class="field"><label>Sort order</label><input name="sort_order" id="fSort" type="number" value="0"></div>
+                <div class="field"><label>Published</label>
+                    <select name="is_published" id="fPublished">
+                        <option value="1" selected>Published</option>
+                        <option value="0">Draft / Hidden</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field" style="margin-bottom:14px;"><label>Description</label><textarea name="description" id="fDesc" placeholder="What was built, the challenge, the outcome..."></textarea></div>
+
+            <div class="field"><label>Preview images (gallery)</label>
+                <input type="file" name="images" id="fImages" accept="image/*" multiple>
+                <div class="hint">First image becomes the cover. Upload screenshots, mockups, or photos.</div>
+                <div class="media-row" id="existingImages"></div>
+            </div>
+
+            <div class="field"><label>Project files (customer downloads)</label>
+                <input type="file" name="files" id="fFiles" multiple>
+                <div class="hint">Optional deliverables customers can download from the delivery page.</div>
+                <div id="existingFiles"></div>
+            </div>
+
+            <input type="hidden" id="keepImages" name="keep_images">
+            <input type="hidden" id="keepFiles" name="keep_files">
+
+            <div style="display:flex;gap:10px;margin-top:18px;">
+                <button type="submit" class="btn-primary" id="saveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Delivery</button>
+                <button type="button" class="btn-ghost" onclick="resetForm()">Cancel</button>
+            </div>
+            <div id="statusMsg"></div>
+        </form>
+    </div>
+
+    <h3 style="color:#fff;font-family:'Rajdhani';letter-spacing:1px;">Exhibits (<span id="itemCount">0</span>)</h3>
+    <div class="item-grid" id="itemGrid"></div>
+</div>
+
+<script>
+let items = [];
+let clients = [];
+let removedImages = new Set();
+let removedFiles = new Set();
+
+async function loadShowcaseClients() {
+    try {
+        const res = await fetch('/api/clients');
+        if (!res.ok) {
+            console.error('Failed to load clients:', res.status, res.statusText);
+            const sel = document.getElementById('fClientId');
+            if (sel) sel.innerHTML = '<option value="">Error loading clients (auth?)</option>';
+            return;
+        }
+        clients = await res.json();
+        const sel = document.getElementById('fClientId');
+        if (!sel) {
+            console.error('Client dropdown element not found');
+            return;
+        }
+        sel.innerHTML = '<option value="">Select a client...</option>' +
+            (Array.isArray(clients) ? clients.map(c =>
+                `<option value="${c.id}">${escapeHtml(c.username)}${c.email ? ' — ' + escapeHtml(c.email) : ''}</option>`
+            ).join('') : '');
+    } catch (e) {
+        console.error('Failed to load clients:', e);
+        const sel = document.getElementById('fClientId');
+        if (sel) sel.innerHTML = '<option value="">Error loading clients</option>';
+    }
+}
+
+async function loadItems() {
+    try {
+        const res = await fetch('/api/admin/showcase');
+        items = await res.json();
+        document.getElementById('itemCount').textContent = items.length;
+        renderItems();
+    } catch (e) { console.error(e); }
+}
+
+function fmtSize(b) { return b > 1048576 ? (b/1048576).toFixed(1)+' MB' : b > 1024 ? (b/1024).toFixed(1)+' KB' : (b||0)+' B'; }
+
+function renderCategoryOptions() {
+    const defaults = ['Web App', 'Website', 'UI/UX Design', 'Graphic Design', 'Branding', 'Video Editing', 'Software Testing', 'Application Development', 'Database Development', 'Other'];
+    const existing = items.map(p => p.category).filter(Boolean);
+    const cats = [...new Set([...defaults, ...existing])].sort((a, b) => a.localeCompare(b));
+    document.getElementById('categoryOptions').innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+}
+
+function renderItems() {
+    renderCategoryOptions();
+    const grid = document.getElementById('itemGrid');
+    if (!items.length) { grid.innerHTML = '<p style="color:#64748b;">No exhibits yet — add your first project above.</p>'; return; }
+    grid.innerHTML = items.map(p => `
+        <div class="item-card">
+            ${p.cover ? `<img src="${p.cover}" alt="">` : `<div class="ph"><i class="fa-solid fa-diagram-project"></i></div>`}
+            <div class="item-body">
+                <h4 class="item-title">${escapeHtml(p.title)}</h4>
+                <div class="item-meta">${escapeHtml(p.category||'General')} · ${escapeHtml(p.client_name||'No client')} · ${p.image_count||0} image(s) · ${p.files?p.files.length:0} file(s)</div>
+                <span class="badge ${p.is_published ? 'pub' : 'draft'}">${p.is_published ? 'Published' : 'Draft'}</span>
+                <div class="item-actions">
+                    <button onclick='editItem(${JSON.stringify(p.id)})'>Edit</button>
+                    <button class="del" onclick="deleteItem(${p.id}, '${escapeHtml(p.title).replace(/'/g,"\\'")}')">Delete</button>
+                </div>
+            </div>
+        </div>`).join('');
+}
+
+function editItem(id) {
+    const p = items.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('editId').value = p.id;
+    document.getElementById('editorTitle').textContent = 'Edit Exhibit';
+    document.getElementById('fTitle').value = p.title || '';
+    document.getElementById('fCategory').value = p.category || '';
+    document.getElementById('fClientId').value = p.client_user_id || '';
+    document.getElementById('fClient').value = p.client_label || '';
+    document.getElementById('fDate').value = p.completed_date || '';
+    document.getElementById('fSort').value = p.sort_order || 0;
+    document.getElementById('fPublished').value = p.is_published ? '1' : '0';
+    document.getElementById('fDesc').value = p.description || '';
+    document.getElementById('fImages').value = '';
+    document.getElementById('fFiles').value = '';
+    removedImages = new Set(); removedFiles = new Set();
+
+    const imgWrap = document.getElementById('existingImages');
+    imgWrap.innerHTML = (p.image_files || []).map(fn => `
+        <div class="media-thumb" data-fn="${fn}">
+            <img src="/showcase/media/${fn}" alt="">
+            <button type="button" class="rm" onclick="markImageRemoved(this,'${fn}')">&times;</button>
+        </div>`).join('');
+
+    const fileWrap = document.getElementById('existingFiles');
+    fileWrap.innerHTML = (p.files || []).map(f => `
+        <span class="file-tag" data-stored="${f.stored}">
+            <i class="fa-solid fa-file"></i> ${escapeHtml(f.name)} (${fmtSize(f.size)})
+            <button type="button" onclick="markFileRemoved(this,'${f.stored}')">&times;</button>
+        </span>`).join('');
+
+    document.getElementById('editorCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function markImageRemoved(btn, fn) { removedImages.add(fn); btn.closest('.media-thumb').remove(); syncKeep(); }
+function markFileRemoved(btn, stored) { removedFiles.add(stored); btn.closest('.file-tag').remove(); syncKeep(); }
+
+function syncKeep() {
+    const p = items.find(x => x.id == document.getElementById('editId').value);
+    if (!p) { document.getElementById('keepImages').value = '[]'; document.getElementById('keepFiles').value = '[]'; return; }
+    const keepImgs = (p.image_files || []).filter(fn => !removedImages.has(fn));
+    const keepFiles = (p.files || []).map(f => f.stored).filter(s => !removedFiles.has(s));
+    document.getElementById('keepImages').value = JSON.stringify(keepImgs);
+    document.getElementById('keepFiles').value = JSON.stringify(keepFiles);
+}
+
+function resetForm() {
+    document.getElementById('showcaseForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('editorTitle').textContent = 'Add Exhibit';
+    document.getElementById('existingImages').innerHTML = '';
+    document.getElementById('existingFiles').innerHTML = '';
+    document.getElementById('keepImages').value = '[]';
+    document.getElementById('keepFiles').value = '[]';
+    removedImages = new Set(); removedFiles = new Set();
+}
+
+async function deleteItem(id, title) {
+    if (!confirm(`Delete "${title}"? This removes it from the public showcase and deletes its files.`)) return;
+    const res = await fetch(`/api/admin/showcase/${id}`, { method: 'DELETE' });
+    if (res.ok) loadItems();
+    else alert('Delete failed.');
+}
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadItems();
+    loadShowcaseClients();
+    renderCategoryOptions();
+
+    document.getElementById('showcaseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        const msg = document.getElementById('statusMsg');
+        btn.disabled = true; msg.textContent = '';
+        const id = document.getElementById('editId').value;
+        const url = id ? `/api/admin/showcase/${id}` : '/api/admin/showcase';
+        const fd = new FormData(e.target);
+        fd.set('keep_images', document.getElementById('keepImages').value || '[]');
+        fd.set('keep_files', document.getElementById('keepFiles').value || '[]');
+        try {
+            const res = await fetch(url, { method: 'POST', body: fd });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.status === 'success') {
+                msg.style.color = '#00e676';
+                msg.textContent = 'Exhibit saved.';
+                resetForm();
+                loadItems();
+            } else {
+                msg.style.color = '#ff8fab';
+                msg.textContent = data.error || 'Save failed.';
+            }
+        } catch (err) {
+            msg.style.color = '#ff8fab';
+            msg.textContent = 'Save failed: ' + err.message;
+        } finally { btn.disabled = false; }
+    });
+});
+</script>
+{% endblock %}

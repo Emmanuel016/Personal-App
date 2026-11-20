@@ -222,6 +222,36 @@ class ContactMessage(db.Model):
         db.Index('idx_contact_created', 'created_at'),
     )
 
+class ShowcaseProject(db.Model):
+    __tablename__ = "showcase_projects"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    title = db.Column(db.String(255), nullable=False)
+    category = db.Column(db.String(100), default="General")
+    description = db.Column(db.Text)
+    client_label = db.Column(db.String(150))
+    completed_date = db.Column(db.Date)
+    is_published = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    images = db.Column(db.JSON, default=list)
+    files = db.Column(db.JSON, default=list)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+class Testimonial(db.Model):
+    __tablename__ = "testimonials"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)  # Optional: if submitted by logged-in client
+    client_name = db.Column(db.String(150), nullable=False)  # Consent to display publicly
+    testimonial_text = db.Column(db.Text, nullable=True)  # Optional
+    rating = db.Column(db.Integer, nullable=True)  # 1-5, optional
+    project_service = db.Column(db.String(255), nullable=False)  # Project/service delivered
+    testimonial_date = db.Column(db.Date, nullable=False)  # When testimonial was given
+    is_published = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
 class DatabaseManager:
     @staticmethod
     def initialize_database(app, database_instance):
@@ -230,6 +260,15 @@ class DatabaseManager:
             logger.info("Initializing database...")
             with app.app_context():
                 database_instance.create_all()
+                # Lightweight column migrations for tables created before new columns existed
+                from sqlalchemy import inspect, text
+                inspector = inspect(database_instance.engine)
+                tables = inspector.get_table_names()
+                if 'showcase_projects' in tables:
+                    cols = [c['name'] for c in inspector.get_columns('showcase_projects')]
+                    if 'client_user_id' not in cols:
+                        database_instance.session.execute(text("ALTER TABLE showcase_projects ADD COLUMN client_user_id INTEGER"))
+                        database_instance.session.commit()
                 logger.info("Database tables created/verified successfully")
         except Exception as e:
             logger.error(f"Database initialization error: {str(e)}")
