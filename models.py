@@ -25,8 +25,6 @@ class User(db.Model):
     phone = db.Column(db.String(50))
     type = db.Column(db.String(50))
     date_added = db.Column(db.Date)
-    deleted_at = db.Column(db.DateTime, nullable=True)
-    is_active = db.Column(db.Boolean, default=True)
 
     # SAFE CASCADES: Only cascade delete for temporary data (notifications, tokens)
     # CRITICAL DATA: Projects, messages, invoices use save-update only to prevent accidental deletion
@@ -51,7 +49,6 @@ class Project(db.Model):
     deadline = db.Column(db.Date)
     amount_paid = db.Column(db.Float, default=0.0)
     price = db.Column(db.Float, default=0.0)
-    deleted_at = db.Column(db.DateTime, nullable=True)
     
     # SAFE CASCADE: Invoices cascade only to prevent orphaned invoices
     invoices = db.relationship("Invoice", backref="project", lazy=True, cascade="save-update, merge")
@@ -66,7 +63,6 @@ class Message(db.Model):
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     type = db.Column(db.String(50))
     payment_data = db.Column(db.JSON)
-    deleted_at = db.Column(db.DateTime, nullable=True)
     
     # SAFE CASCADE: File attachments cascade to prevent orphaned files
     attachments = db.relationship("FileAttachment", backref="message", lazy=True, cascade="save-update, merge")
@@ -101,7 +97,6 @@ class FileAttachment(db.Model):
     mime_type = db.Column(db.String(100))
     uploaded_by_role = db.Column(db.String(50))
     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    deleted_at = db.Column(db.DateTime, nullable=True)
 
 # Event listener to delete physical file when FileAttachment is deleted
 @event.listens_for(FileAttachment, 'after_delete')
