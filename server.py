@@ -1528,7 +1528,9 @@ class EmmaServer:
         return None
 
     def _can_view_showcase(self, owner_id):
-        return session.get("role", "client").lower() == "admin" or session.get("user_id") == owner_id
+        if session.get("role", "client").lower() == "admin":
+            return True
+        return owner_id is not None and session.get("user_id") == owner_id
 
     def showcase_api(self, project_id=None):
         if project_id is None:
@@ -1547,7 +1549,7 @@ class EmmaServer:
         if not path or path.suffix.lower() not in self.SHOWCASE_IMAGE_EXTENSIONS:
             abort(404)
         owner = self._showcase_file_owner(secure_filename(filename))
-        if owner is None or not self._can_view_showcase(owner):
+        if not self._can_view_showcase(owner):
             abort(403)
         return send_file(str(path), conditional=True, max_age=86400)
 
